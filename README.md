@@ -34,6 +34,12 @@ Structure:
    - Always test your scripts to ensure they function as expected.
 
 
+## Using *IInstruqt*
+
+- `code-server`. By default the Code Server will be using port `3001`, so ensure you use the port `3000` as part of the `Tab Port`.
+- `cockroachdb-ui`. By default, the CockroachDB UI uses `8080`, but you need to use the port `3080` in the `Tab port`.
+
+
 ## Example of Excution
 
 ```bash
