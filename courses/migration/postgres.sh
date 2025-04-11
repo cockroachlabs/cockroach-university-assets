@@ -5,6 +5,11 @@ set -euxo pipefail
 # Postgres
 ##
 
+# Create schemas directory
+SCHEMAS=/root/cockroachdb/schemas
+mkdir -p $SCHEMAS
+
+
 cat > $SCHEMAS/schema_postgres.sql <<EOF
 
 CREATE DATABASE logistics;

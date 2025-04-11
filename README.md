@@ -38,27 +38,33 @@ Structure:
 
 ```bash
 #!/bin/bash
-set -euxo pipefail
 
-# Define the array
-SCRIPTS=("base/01-ubuntu.sh" "base/ubuntu-jvm-21.sh" "base/cockroachdb.sh" "codeserver/01-codeserver.sh" "codeserver/codeserver-ext-jvm.sh" "courses/migration/01-ubuntu-dbs.sh")
+SCRIPTS=(
+  "base/01-ubuntu.sh"
+  "base/ubuntu-jvm-21.sh"
+  "base/cockroachdb.sh"
+  "codeserver/01-codeserver.sh"
+  "codeserver/codeserver-ext-jvm.sh"
+  "courses/migration/01-ubuntu-dbs.sh"
+  "courses/migration/molt.sh"
+)
 
-# Base URL where the scripts are hosted (replace with your actual URL)
 BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/"
 
-# Loop through each script
-for SCRIPT in "${SCRIPTS[@]}"; do
-    TMP_PATH="/tmp/$SCRIPT"
+for SCRIPT_PATH in "${SCRIPTS[@]}"; do
+    SCRIPT_NAME=$(basename "$SCRIPT_PATH")      # Extract just the filename
+    TMP_PATH="/tmp/$SCRIPT_NAME"                # Full temp path to save
 
-    # Download the script
-    curl -fsSL "$BASE_URL/$SCRIPT" -o "$TMP_PATH"
+    # Download using the full relative path from GitHub
+    curl -fsSL "${BASE_URL}${SCRIPT_PATH}" -o "$TMP_PATH"
 
     if [[ $? -eq 0 ]]; then
-        chmod +x "$TMP_PATH"         # Make it executable
-        "$TMP_PATH"                  # Execute it
-        rm -f "$TMP_PATH"            # Delete it after execution
+        chmod +x "$TMP_PATH"
+        "$TMP_PATH"
+        rm -f "$TMP_PATH"
     else
-        echo "Failed to download $SCRIPT"
+        echo "❌ Failed to download $SCRIPT_PATH"
     fi
 done
+
 ```

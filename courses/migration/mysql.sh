@@ -21,6 +21,9 @@ mysql -e "grant all privileges on crm.* to 'crmuser'@'localhost';"
 mysql -e "grant select on mysql.gtid_executed to 'crmuser'@'localhost';"
 mysql -e "flush privileges;"
 
+## CREATE SCHEMAS DIRECTORY
+SCHEMAS=/root/cockroachdb/schemas
+mkdir -p $SCHEMAS
 
 ##
 # MySQL
