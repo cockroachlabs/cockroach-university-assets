@@ -4,12 +4,6 @@ set -euxo pipefail
 ##
 # Postgres
 ##
-sudo -u postgres psql -c "create role logistics_user with superuser login password 'lpwd';"
-PG_CONFIG=/etc/postgresql/16/main/pg_hba.conf
-NEW_AUTH_METHOD="scram-sha-256"
-sed -i.bak '/^local\s\+all\s\+all\s\+/ s/peer$/'"$NEW_AUTH_METHOD"'/' "$PG_CONFIG"
-
-
 # Create schemas directory
 SCHEMAS=/root/cockroachdb/schemas
 mkdir -p $SCHEMAS
@@ -319,3 +313,11 @@ EOF
 if [ -f $SCHEMAS/schema_postgres.sql ]; then
     sudo -u postgres psql -d postgres < $SCHEMAS/schema_postgres.sql
 fi
+
+## Adding the User
+sudo -u postgres psql -c "create role logistics_user with superuser login password 'lpwd';"
+sudo -u postgres psql -c "alter database logistics OWNER TO logistics_user;"
+PG_CONFIG=/etc/postgresql/16/main/pg_hba.conf
+NEW_AUTH_METHOD="scram-sha-256"
+sed -i.bak '/^local\s\+all\s\+all\s\+/ s/peer$/'"$NEW_AUTH_METHOD"'/' "$PG_CONFIG"
+sudo systemctl restart postgresql
