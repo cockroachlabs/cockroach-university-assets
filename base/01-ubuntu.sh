@@ -8,6 +8,7 @@ sudo apt -q -y --force-yes install \
     curl \
     wget \
     unzip \
+    git \
     jq \
     htop \
     socat \
