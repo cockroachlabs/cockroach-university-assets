@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-export CODE_SERVER_VERSION=${CODE_SERVER_VERSION:-4.98.2}
+export CODE_SERVER_VERSION=${CODE_SERVER_VERSION:-4.99.2}
 
 ## CODE SERVER
 curl -sfOL https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server_${CODE_SERVER_VERSION}_amd64.deb
