@@ -18,14 +18,6 @@ cat > $USER_PATH/settings.json <<'EOF1'
     "security.workspace.trust.enabled": false,
     "sqltools.autoConnectTo": "",
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.test.config": [
-        {
-          "name": "Spring Boot Test",
-          "workingDirectory": "${workspaceFolder}",
-          "vmArgs": "-ea"
-        }
-      ],
-    "java.test.defaultConfig": "Spring Boot Test",
     "java.test.enabled": true,
     "java.test.log.level": "verbose",
     "java.debug.logLevel": "verbose",
