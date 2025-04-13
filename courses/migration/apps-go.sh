@@ -24,7 +24,7 @@ URL="https://github.com/cockroachlabs/cockroach-university-apps/releases/downloa
 DEST="/usr/local/bin/migration-mysql-app"
 
 # Download and install
-echo "Downloading $URL ..."
+echo "[INFO] Downloading $URL ..."
 curl -fsSL "$URL" -o "$DEST"
 
 # Make it executable

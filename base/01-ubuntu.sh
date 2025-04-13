@@ -2,6 +2,7 @@
 set -euxo pipefail
 
 ## INSTALLATION
+echo "[INFO] Updating package list and installing required packages..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt -y update
 sudo apt -q -y --force-yes install \

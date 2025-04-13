@@ -2,6 +2,8 @@
 set -euxo pipefail
 
 ## INSTALLING DOCKER AND DOCKER COMPOSE
+echo "[INFO] Installing Docker..."
+echo "[INFO] Installing Docker Compose..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt install -y docker.io
 sudo systemctl enable --now docker

@@ -5,10 +5,11 @@ set -euxo pipefail
 # Postgres
 ##
 # Create schemas directory
+echo "[INFO] Installing PostgreSQL databases..."
 SCHEMAS=/root/cockroachdb/schemas
 mkdir -p $SCHEMAS
 
-
+echo "[INFO] Creating PostgreSQL schema..."
 cat > $SCHEMAS/schema_postgres.sql <<EOF
 
 CREATE DATABASE logistics;
@@ -283,7 +284,7 @@ INSERT INTO shipments VALUES
 (125,28,5,0,'1972-02-10'),
 (126,26,6,6,'1989-05-10'),
 (127,28,7,30,'2015-04-01'),
-128,11,8,97510508,'1979-06-19'),
+(128,11,8,97510508,'1979-06-19'),
 (129,50,9,254820,'1986-10-01'),
 (130,13,10,298,'2008-03-30'),
 (131,22,1,788626,'2020-08-22'),
@@ -311,16 +312,29 @@ EOF
 
 
 if [ -f $SCHEMAS/schema_postgres.sql ]; then
+    echo "[INFO] Executing PostgreSQL schema..."
     sudo -u postgres psql -d postgres < $SCHEMAS/schema_postgres.sql
 fi
 
 ## Adding the User
+echo "[INFO] Creating PostgreSQL user..."
 sudo -u postgres psql -c "create role logistics_user with superuser login password 'lpwd';"
 sudo -u postgres psql -c "alter database logistics OWNER TO logistics_user;"
 PG_CONFIG=/etc/postgresql/16/main/pg_hba.conf
 NEW_AUTH_METHOD="scram-sha-256"
 sed -i.bak '/^local\s\+all\s\+all\s\+/ s/peer$/'"$NEW_AUTH_METHOD"'/' "$PG_CONFIG"
+
+echo "[INFO] Restarting PostgreSQL service..."
 sudo systemctl restart postgresql
 
+echo "[INFO] Setting sequence values..."
+cat > /usr/local/bin/fix-postgres.sh <<EOF
+#!/bin/bash
+set -euxo pipefail
 sudo -u postgres psql -c "SELECT setval('shipments_shipment_id_seq', COALESCE((SELECT MAX(shipment_id) + 1 FROM shipments), 1), false);"
 sudo -u postgres psql -c "SELECT setval('products_product_id_seq', COALESCE((SELECT MAX(product_id) + 1 FROM products), 1), false);"
+EOF
+
+if [ -f /usr/local/bin/fix-postgres.sh ]; then
+    chmod +x /usr/local/bin/fix-postgres.sh
+fi

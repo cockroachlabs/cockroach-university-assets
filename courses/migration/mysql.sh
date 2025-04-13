@@ -2,6 +2,7 @@
 set -euxo pipefail
 
 ## ADDING MYSQL CONFIGURATION
+echo "[INFO] Adding MySQL configuration..."
 cat > /etc/mysql/conf.d/my.cnf <<EOF
 [mysqld]
 gtid_mode = ON
@@ -13,21 +14,25 @@ binlog_format = ROW
 EOF
 
 ## RESTARTING MYSQL
+echo "[INFO] Restarting MySQL..."
 sudo systemctl restart mysql
 
 ## ADDING USERS MYSQL
+echo "[INFO] Adding MySQL users..."
 mysql -e "create user 'crmuser'@'localhost' identified by 'crmpwd';"
 mysql -e "grant all privileges on crm.* to 'crmuser'@'localhost';"
 mysql -e "grant select on mysql.gtid_executed to 'crmuser'@'localhost';"
 mysql -e "flush privileges;"
 
 ## CREATE SCHEMAS DIRECTORY
+echo "[INFO] Creating schemas directory..."
 SCHEMAS=/root/cockroachdb/schemas
 mkdir -p $SCHEMAS
 
 ##
 # MySQL
 ##
+echo "[INFO] Creating MySQL schema..."
 cat > $SCHEMAS/schema_mysql.sql <<EOF
 
 CREATE DATABASE IF NOT EXISTS crm;
@@ -128,5 +133,6 @@ UNLOCK TABLES;
 EOF
 
 if [ -f $SCHEMAS/schema_mysql.sql ]; then
+    echo "[INFO] Executing MySQL schema..."
     mysql < $SCHEMAS/schema_mysql.sql
 fi

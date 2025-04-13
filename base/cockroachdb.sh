@@ -3,6 +3,8 @@ set -euxo pipefail
 
 ## INSTALLING COCKROACHDB
 export COCKROACH_VER=${COCKROACH_VER:-v25.1.2}
+echo "[INFO] Installing CockroachDB version ${COCKROACH_VER}"
+echo "[INFO] Downloading CockroachDB binaries..."
 curl https://binaries.cockroachdb.com/cockroach-${COCKROACH_VER}.linux-amd64.tgz | tar -xz && sudo cp -i cockroach-${COCKROACH_VER}.linux-amd64/cockroach /usr/local/bin/
 mkdir -p /usr/local/lib/cockroach
 cp -i cockroach-${COCKROACH_VER}.linux-amd64/lib/libgeos.so /usr/local/lib/cockroach/
@@ -17,4 +19,5 @@ nohup cockroach start-single-node --insecure --background > foo.out 2> foo.err <
 nohup socat tcp-listen:3080,reuseaddr,fork tcp:localhost:8080 > /var/log/listen-3080.out 2> /var/log/listen-3080.err < /dev/null &
 
 ## CREATING DEFAULT WORKING DIRECTORY
+echo "[INFO] Creating default working directory..."
 mkdir -p /root/cockroachdb
