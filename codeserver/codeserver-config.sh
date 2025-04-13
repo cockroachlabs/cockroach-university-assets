@@ -11,7 +11,7 @@ mkdir -p $SETTINGS_PATH
 mkdir -p $USER_PATH
 
 echo "[INFO] Creating Code Server settings.json..."
-cat > $USER_PATH/settings.json <<EOF1
+cat > $USER_PATH/settings.json <<'EOF1'
 {
     "workbench.colorTheme": "Tomorrow Night Blue",
     "workbench.startupEditor": "none",
