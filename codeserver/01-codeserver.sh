@@ -27,7 +27,28 @@ cat > $USER_PATH/settings.json <<EOF
     "workbench.colorTheme": "Tomorrow Night Blue",
     "workbench.startupEditor": "none",
     "security.workspace.trust.enabled": false,
-    "sqltools.autoConnectTo": ""
+    "sqltools.autoConnectTo": "",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.test.config": [
+        {
+          "name": "Spring Boot Test",
+          "workingDirectory": "${workspaceFolder}",
+          "vmArgs": "-ea"
+        }
+      ],
+    "java.test.defaultConfig": "Spring Boot Test",
+    "java.test.enabled": true,
+    "java.test.log.level": "verbose",
+    "java.debug.logLevel": "verbose",
+    "java.debug.settings.console": "internalConsole",
+    "java.configuration.runtimes": [
+        {
+          "name": "JavaSE-17",
+          "path": "/usr/lib/jvm/java-17-openjdk-amd64",
+          "default": true
+        }
+    ],
+    "editor.formatOnSave": true
 }
 EOF
 
