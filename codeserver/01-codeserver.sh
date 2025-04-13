@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-export CODE_SERVER_VERSION=${CODE_SERVER_VERSION:-4.99.2}
+export CODE_SERVER_VERSION=${CODE_SERVER_VERSION:-4.22.0}
 
 ## CODE SERVER
 echo "[INFO] Downloading code-server version $CODE_SERVER_VERSION ..."
