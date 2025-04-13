@@ -30,4 +30,4 @@ curl -fsSL "$URL" -o "$DEST"
 # Make it executable
 chmod +x "$DEST"
 
-echo "✅ Installed to $DEST"
+echo "[INFO] Installed to $DEST"
