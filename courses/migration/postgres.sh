@@ -336,5 +336,6 @@ sudo -u postgres psql -c "SELECT setval('products_product_id_seq', COALESCE((SEL
 EOF
 
 if [ -f /usr/local/bin/fix-postgres.sh ]; then
+    echo "[INFO] fix-postgres.sh exists.
     chmod +x /usr/local/bin/fix-postgres.sh
 fi
