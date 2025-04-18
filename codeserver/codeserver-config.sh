@@ -17,6 +17,7 @@ cat > $USER_PATH/settings.json <<'EOF1'
     "workbench.startupEditor": "none",
     "security.workspace.trust.enabled": false,
     "sqltools.autoConnectTo": "",
+    "java.telemetry.enabled": true,
     "java.compile.nullAnalysis.mode": "automatic",
     "java.test.enabled": true,
     "java.test.log.level": "verbose",
