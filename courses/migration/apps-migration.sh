@@ -3,7 +3,7 @@ set -euxo pipefail
 
 TMP=/tmp/apps
 APPS=/root/cockroachdb/
-UUID=/root/cockroachdb/migration/
+UUID=/root/cockroachdb/schemas/
 
 # If $TMP doesn't exist, create it
 if [ ! -d "$TMP" ]; then
@@ -36,7 +36,7 @@ if command -v git >/dev/null 2>&1; then
     # Move the apps to the correct directory
     mv $TMP/migration-java-apps/crm $APPS
     mv $TMP/migration-java-apps/logistics $APPS
-    mv $TMP/migration-python-apps/int-to-uuid/* $UUID
+    mv $TMP/migration-sql/* $UUID
 
     echo "[INFO] Moving completed."
     echo "[INFO] Removing $TMP directory..."
