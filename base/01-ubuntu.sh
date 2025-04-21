@@ -12,5 +12,7 @@ sudo apt -q -y --force-yes install \
     git \
     jq \
     htop \
+    python3-pip \
+    python3.12-venv \
     socat \
     haproxy 
