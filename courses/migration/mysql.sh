@@ -1,6 +1,6 @@
+
 #!/bin/bash
 set -euxo pipefail
-
 ## ADDING MYSQL CONFIGURATION
 echo "[INFO] Adding MySQL configuration..."
 cat > /etc/mysql/conf.d/my.cnf <<EOF
