@@ -38,5 +38,8 @@ cockroach init --insecure --host=localhost:26257
 ## setup port forwarding for the db console 1
 # COCKROACHDB UI
 nohup socat tcp-listen:3080,reuseaddr,fork tcp:localhost:8080 > /var/log/listen-3080.out 2> /var/log/listen-3080.err < /dev/null &
+nohup socat tcp-listen:3081,reuseaddr,fork tcp:localhost:8081 > /var/log/listen-3080.out 2> /var/log/listen-3081.err < /dev/null &
+nohup socat tcp-listen:3082,reuseaddr,fork tcp:localhost:8082 > /var/log/listen-3082.out 2> /var/log/listen-3082.err < /dev/null &
+nohup socat tcp-listen:3083,reuseaddr,fork tcp:localhost:8083 > /var/log/listen-3083.out 2> /var/log/listen-3083.err < /dev/null &
 
 echo "Done cluster setup"
