@@ -22,7 +22,6 @@ rm -rf ~/node*
 
 # Start CockroachDB instances
 # Without the nohup, file redirection and the background flags, instruqt hangs
- Start four CockroachDB instances
 nohup cockroach start --insecure --store=node1 --listen-addr=localhost:26000 \
    --http-addr=0.0.0.0:8080 --join=localhost:26000,localhost:26001,localhost:26002 \
    --locality=host=localhost,node=node1 --background > foo.out 2> foo.err < /dev/null
