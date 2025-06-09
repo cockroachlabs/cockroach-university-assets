@@ -15,8 +15,8 @@ else
 fi
 
 # Wipe out any traces prior attempts
-if [ "$(pgrep -c cockroach)" -ge 1 ]; then 
-    pkill -9 cockroach
+if [ "$(pgrep -cx cockroach)" -ge 1 ]; then 
+    pkill -9 -x cockroach
 fi
 rm -rf ~/node*
 
