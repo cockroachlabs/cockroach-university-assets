@@ -17,6 +17,7 @@ if [ ! -d /root/tracker ]; then
   exit 1
 fi
 # Install npm dependencies
+cd /root/tracker
 echo "Installing npm dependencies..."
 npm install
 
