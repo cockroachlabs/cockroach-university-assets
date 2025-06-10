@@ -1,11 +1,6 @@
-
 #!/bin/bash
-#
-# This script runs when the platform setup the challenge.
-#
-# The platform determines if the script was successful using the exit code of this
-# script. If the exit code is not 0, the script fails. 
-#
+
+echo "[BOTTLE NECK] Starting the bottleneck creation..."
 
 # Drop the bookly database if it exists
 cockroach sql --insecure --execute="

@@ -1,4 +1,4 @@
-#!/bin.bash
+#!/bin/bash
 
 echo "[JMETER] Download Apache Jmeter for load testing"
 
