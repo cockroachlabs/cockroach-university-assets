@@ -21,7 +21,7 @@
         <boolProp name="keepAlive">true</boolProp>
         <stringProp name="connectionAge">5000</stringProp>
         <stringProp name="checkQuery"></stringProp>
-        <stringProp name="dbUrl">jdbc:postgresql://ilt-lab-vm:26257/bookly?sslmode=disable</stringProp>
+        <stringProp name="dbUrl">jdbc:postgresql://localhost:26257/bookly?sslmode=disable</stringProp>
         <stringProp name="driver">org.postgresql.Driver</stringProp>
         <stringProp name="username">root</stringProp>
         <stringProp name="password"></stringProp>
@@ -55,7 +55,7 @@
         </JDBCSampler>
         <hashTree>
           <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="20000_primary_keys_books_csv_data_set_config" enabled="true">
-            <stringProp name="filename">20000_primary_keys_books.csv</stringProp>
+            <stringProp name="filename">/root/data/20000_primary_keys_books.csv</stringProp>
             <stringProp name="fileEncoding">UTF-8</stringProp>
             <stringProp name="variableNames">csv_book_id</stringProp>
             <boolProp name="ignoreFirstLine">true</boolProp>
@@ -99,7 +99,7 @@
         </JDBCSampler>
         <hashTree>
           <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="20000_primary_keys_books_csv_data_set_config" enabled="true">
-            <stringProp name="filename">20000_primary_keys_books.csv</stringProp>
+            <stringProp name="filename">/root/data/20000_primary_keys_books.csv</stringProp>
             <stringProp name="fileEncoding">UTF-8</stringProp>
             <stringProp name="variableNames">csv_book_id</stringProp>
             <boolProp name="ignoreFirstLine">true</boolProp>
@@ -144,7 +144,7 @@
         </JDBCSampler>
         <hashTree>
           <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="500000_book_id_prices_csv_data_set_config" enabled="true">
-            <stringProp name="filename">500000_book_id_prices.csv</stringProp>
+            <stringProp name="filename">/root/data/500000_book_id_prices.csv</stringProp>
             <stringProp name="fileEncoding">UTF-8</stringProp>
             <stringProp name="variableNames">csv_book_id,csv_price</stringProp>
             <boolProp name="ignoreFirstLine">true</boolProp>
