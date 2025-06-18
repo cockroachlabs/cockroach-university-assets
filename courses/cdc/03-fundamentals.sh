@@ -33,4 +33,4 @@ EOF
 
 # Start the services
 cd $COMPOSE
-nohup docker compose up -d > my_compose_log.out 2>&1 &
+nohup docker-compose up -d > kafka_compose_log.out 2>&1 &
