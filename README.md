@@ -74,3 +74,63 @@ for SCRIPT_PATH in "${SCRIPTS[@]}"; do
 done
 
 ```
+
+## Example of Execution with Parameters to the Scripts
+
+```bash
+#!/bin/bash
+
+# Define SCRIPTS as an array of strings, where each string can include parameters.
+# For scripts with parameters, enclose the entire command in double quotes.
+# For scripts without parameters, simply list the path.
+SCRIPTS=(
+    "codeserver/codeserver-ext-jvm.sh"
+    "courses/cdc/01-fundamentals.sh param1 param2" # Example with parameters
+    "another/script/path.sh -f --verbose"         # Another example
+    "yet/another/script.sh"                       # Script without parameters
+)
+
+BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/"
+
+for SCRIPT_CMD_FULL in "${SCRIPTS[@]}"; do
+    echo "[INFO] **************************************************"
+
+    # Extract the script path (the first "word" in the command string)
+    SCRIPT_PATH=$(echo "$SCRIPT_CMD_FULL" | awk '{print $1}')
+
+    # Extract just the filename
+    SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+    TMP_PATH="/tmp/$SCRIPT_NAME"
+
+    # Extract the parameters (all "words" after the first one)
+    # This creates an array of parameters
+    SCRIPT_PARAMS=()
+    if [[ $(echo "$SCRIPT_CMD_FULL" | wc -w) -gt 1 ]]; then
+        # Use read -ra to parse the remaining arguments into an array
+        read -ra SCRIPT_PARAMS <<< "$(echo "$SCRIPT_CMD_FULL" | cut -d' ' -f2-)"
+    fi
+
+    # Download using the full relative path from GitHub
+    echo "[INFO] Attempting to download: ${BASE_URL}${SCRIPT_PATH}"
+    curl -fsSL "${BASE_URL}${SCRIPT_PATH}" -o "$TMP_PATH"
+
+    if [[ $? -eq 0 ]]; then
+        echo "[INFO] Successfully downloaded $SCRIPT_NAME to $TMP_PATH"
+        chmod +x "$TMP_PATH"
+        echo "[INFO] Executing $SCRIPT_NAME with parameters: ${SCRIPT_PARAMS[*]}"
+        # Execute the script with its extracted parameters
+        "$TMP_PATH" "${SCRIPT_PARAMS[@]}"
+        EXEC_STATUS=$? # Capture the exit status of the executed script
+
+        if [[ $EXEC_STATUS -eq 0 ]]; then
+            echo "[INFO] Script $SCRIPT_NAME executed successfully."
+        else
+            echo "❌ Script $SCRIPT_NAME exited with error status: $EXEC_STATUS"
+        fi
+
+        rm -f "$TMP_PATH"
+    else
+        echo "❌ Failed to download $SCRIPT_PATH"
+    fi
+done
+```

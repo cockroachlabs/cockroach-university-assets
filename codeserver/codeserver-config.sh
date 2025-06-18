@@ -35,10 +35,13 @@ cat > $USER_PATH/settings.json <<'EOF1'
 EOF1
 
 echo "[INFO] Creating Code Server coder.json..."
+DEFAULT_PATH="/root/cockroachdb"
+MY_PATH=${1:-$DEFAULT_PATH}
+
 cat > $SETTINGS_PATH/coder.json <<EOF2
 {
   "query": {
-    "folder": "/root/cockroachdb"
+    "folder": "$MY_PATH"
   }
 }
 EOF2
