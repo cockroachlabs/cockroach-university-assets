@@ -11,6 +11,8 @@ log_slave_updates = ON
 server_id = 101
 log_bin = mysql-bin
 binlog_format = ROW
+binlog_row_metadata = FULL
+binlog_row_image = FULL
 EOF
 
 ## RESTARTING MYSQL
