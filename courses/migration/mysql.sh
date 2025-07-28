@@ -23,6 +23,7 @@ sudo systemctl restart mysql
 echo "[INFO] Adding MySQL users..."
 mysql -e "create user 'crmuser'@'localhost' identified by 'crmpwd';"
 mysql -e "grant all privileges on crm.* to 'crmuser'@'localhost';"
+mysql -e "grant select, reload, replication slave, replication client ON *.* TO 'crmuser'@'localhost';"
 mysql -e "grant select on mysql.gtid_executed to 'crmuser'@'localhost';"
 mysql -e "flush privileges;"
 
