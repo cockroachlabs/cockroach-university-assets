@@ -331,8 +331,15 @@ echo "[INFO] Setting sequence values..."
 cat > /usr/local/bin/fix-postgres.sh <<EOF
 #!/bin/bash
 set -euxo pipefail
+
+# Reset shipments sequence
 sudo -u postgres psql -d logistics -c "SELECT setval('shipments_shipment_id_seq', COALESCE((SELECT MAX(shipment_id) + 1 FROM public.shipments), 1), false);"
+
+# Reset products sequence
 sudo -u postgres psql -d logistics -c "SELECT setval('products_product_id_seq', COALESCE((SELECT MAX(product_id) + 1 FROM public.products), 1), false);"
+
+# Reset inventory sequence
+sudo -u postgres psql -d logistics -c "SELECT setval('inventory_inventory_id_seq', COALESCE((SELECT MAX(inventory_id) + 1 FROM public.inventory), 1), false);"
 EOF
 
 if [ -f /usr/local/bin/fix-postgres.sh ]; then
