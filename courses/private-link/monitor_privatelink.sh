@@ -74,26 +74,3 @@ echo ""
 echo "================================================================"
 echo "Monitor Complete"
 echo "================================================================"
-```
-
-## 6. `.gitignore`
-```
-# AWS Credentials - NEVER commit these!
-aws-credentials.sh
-*.pem
-*.key
-
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfplan
-*.tfvars
-.terraform.lock.hcl
-
-# Environment files
-.env
-
-# OS files
-.DS_Store
-Thumbs.db
