@@ -13,6 +13,10 @@ sudo apt -q -y --force-yes install \
     jq \
     htop \
     python3-pip \
-    python3-venv \
+    python3.12-venv \
+    python3-psycopg2 \
+    htop \
+    tmux \
+    tree \
     socat \
     haproxy 
