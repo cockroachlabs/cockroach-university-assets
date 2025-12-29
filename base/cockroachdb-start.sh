@@ -7,7 +7,7 @@ if command -v cockroach &> /dev/null && \
    [ -f "/usr/local/lib/cockroach/libgeos_c.so" ]; then
     echo "CockroachDB is installed correctly"
 else
-    echo "CockroachDB is not installed"
+    echo "❌ CockroachDB is not installed"
     exit 1
 fi
 

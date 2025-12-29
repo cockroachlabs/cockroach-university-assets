@@ -51,6 +51,13 @@ SELECT
 FROM generate_series(1, 10000);
 EOF
 
+# Make sure cockroach is running before executing the next command
+echo "Checking if CockroachDB is running..."
+if ! cockroach sql --insecure -e "SELECT 1;" &> /dev/null; then
+    echo "❌ Error: CockroachDB is not running. Please start CockroachDB first."
+    exit 1
+fi
+echo "CockroachDB is running. Creating database..."
 cockroach sql --insecure -e "CREATE DATABASE sales_db;"
 
 echo "Lab 1 Setup Complete."
