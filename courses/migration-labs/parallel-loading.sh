@@ -368,36 +368,36 @@ cockroach sql --insecure -e "CREATE DATABASE warehouse_db;"
 cockroach sql --insecure -d warehouse_db << 'EOF'
 CREATE TABLE products (
     product_id BIGINT PRIMARY KEY,
-    sku STRING,
-    product_name STRING,
+    sku STRING UNIQUE NOT NULL,
+    product_name STRING NOT NULL,
     description STRING,
     category STRING,
-    price DECIMAL(10,2),
-    cost DECIMAL(10,2),
+    price DECIMAL(10,2) NOT NULL,
+    cost DECIMAL(10,2) NOT NULL,
     weight_kg DECIMAL(8,2),
     dimensions STRING,
     supplier_id INT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT current_timestamp(),
+    updated_at TIMESTAMP DEFAULT current_timestamp()
 );
 
 CREATE TABLE customers (
     customer_id BIGINT PRIMARY KEY,
-    email STRING,
-    first_name STRING,
-    last_name STRING,
+    email STRING UNIQUE NOT NULL,
+    first_name STRING NOT NULL,
+    last_name STRING NOT NULL,
     company_name STRING,
     phone STRING,
-    customer_type STRING,
+    customer_type STRING DEFAULT 'retail',
     credit_limit DECIMAL(12,2),
-    registration_date TIMESTAMP,
+    registration_date TIMESTAMP DEFAULT current_timestamp(),
     last_login TIMESTAMP,
-    status STRING
+    status STRING DEFAULT 'active'
 );
 
 CREATE TABLE suppliers (
     supplier_id BIGINT PRIMARY KEY,
-    supplier_name STRING,
+    supplier_name STRING NOT NULL,
     contact_name STRING,
     email STRING,
     phone STRING,
@@ -406,13 +406,13 @@ CREATE TABLE suppliers (
     country STRING,
     payment_terms STRING,
     rating DECIMAL(3,2),
-    created_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT current_timestamp()
 );
 
 CREATE TABLE warehouses (
     warehouse_id BIGINT PRIMARY KEY,
-    warehouse_code STRING,
-    warehouse_name STRING,
+    warehouse_code STRING UNIQUE NOT NULL,
+    warehouse_name STRING NOT NULL,
     address STRING,
     city STRING,
     state STRING,
@@ -426,26 +426,26 @@ CREATE TABLE warehouses (
 
 CREATE TABLE employees (
     employee_id BIGINT PRIMARY KEY,
-    employee_code STRING,
-    first_name STRING,
-    last_name STRING,
-    email STRING,
+    employee_code STRING UNIQUE NOT NULL,
+    first_name STRING NOT NULL,
+    last_name STRING NOT NULL,
+    email STRING UNIQUE NOT NULL,
     phone STRING,
     department STRING,
     position STRING,
-    hire_date DATE,
+    hire_date DATE NOT NULL,
     salary DECIMAL(10,2),
     manager_id INT,
-    status STRING
+    status STRING DEFAULT 'active'
 );
 
 CREATE TABLE inventory_transactions (
     transaction_id BIGINT PRIMARY KEY,
-    transaction_date TIMESTAMP,
-    transaction_type STRING,
-    product_sku STRING,
-    warehouse_code STRING,
-    quantity INT,
+    transaction_date TIMESTAMP DEFAULT current_timestamp(),
+    transaction_type STRING NOT NULL,
+    product_sku STRING NOT NULL,
+    warehouse_code STRING NOT NULL,
+    quantity INT NOT NULL,
     unit_cost DECIMAL(10,2),
     total_value DECIMAL(12,2),
     reference_number STRING,
@@ -455,24 +455,24 @@ CREATE TABLE inventory_transactions (
 
 CREATE TABLE sales_transactions (
     sale_id BIGINT PRIMARY KEY,
-    sale_date TIMESTAMP,
-    customer_email STRING,
-    product_sku STRING,
-    quantity INT,
-    unit_price DECIMAL(10,2),
-    discount_percent DECIMAL(5,2),
-    tax_amount DECIMAL(10,2),
-    total_amount DECIMAL(12,2),
+    sale_date TIMESTAMP DEFAULT current_timestamp(),
+    customer_email STRING NOT NULL,
+    product_sku STRING NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    discount_percent DECIMAL(5,2) DEFAULT 0,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    total_amount DECIMAL(12,2) NOT NULL,
     payment_method STRING,
-    status STRING,
+    status STRING DEFAULT 'completed',
     invoice_number STRING
 );
 
 CREATE TABLE audit_logs (
     log_id BIGINT PRIMARY KEY,
-    log_timestamp TIMESTAMP,
+    log_timestamp TIMESTAMP DEFAULT current_timestamp(),
     user_id STRING,
-    action STRING,
+    action STRING NOT NULL,
     table_name STRING,
     record_id STRING,
     old_values JSONB,
