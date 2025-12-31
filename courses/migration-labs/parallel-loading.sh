@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euxo pipefail
 
+# Create database
+sudo -u postgres psql -c "CREATE DATABASE warehouse_db;"
+
 echo "Generating PostgreSQL dataset..."
 sudo -u postgres psql -d warehouse_db << 'EOF'
 -- Create Tables
