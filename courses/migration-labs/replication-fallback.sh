@@ -81,11 +81,60 @@ cockroach sql --insecure -e "CREATE DATABASE production_db;"
 
 # 8. Create Target Schema
 cockroach sql --insecure -d production_db << 'EOF'
-CREATE TABLE users (user_id INT PRIMARY KEY, username STRING, email STRING, full_name STRING, status STRING, last_login TIMESTAMP, created_at TIMESTAMP, updated_at TIMESTAMP);
-CREATE TABLE orders (order_id INT PRIMARY KEY, user_id INT, order_number STRING, order_date TIMESTAMP, total_amount DECIMAL(12,2), status STRING, shipping_address STRING, created_at TIMESTAMP, updated_at TIMESTAMP);
-CREATE TABLE order_items (item_id INT PRIMARY KEY, order_id INT, product_id INT, quantity INT, unit_price DECIMAL(10,2), subtotal DECIMAL(12,2), created_at TIMESTAMP);
-CREATE TABLE inventory (inventory_id INT PRIMARY KEY, product_id INT, warehouse_id INT, quantity INT, reserved_quantity INT, last_restocked TIMESTAMP, updated_at TIMESTAMP);
-CREATE TABLE audit_trail (audit_id INT PRIMARY KEY, table_name STRING, operation STRING, record_id INT, user_id INT, changes JSONB, ip_address INET, created_at TIMESTAMP);
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username STRING UNIQUE NOT NULL,
+    email STRING UNIQUE NOT NULL,
+    full_name STRING,
+    status STRING,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    user_id INT NOT NULL,
+    order_number STRING UNIQUE NOT NULL,
+    order_date TIMESTAMP,
+    total_amount DECIMAL(12,2) NOT NULL,
+    status STRING,
+    shipping_address STRING,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    item_id INT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    created_at TIMESTAMP
+);
+
+CREATE TABLE inventory (
+    inventory_id INT PRIMARY KEY,
+    product_id INT NOT NULL,
+    warehouse_id INT NOT NULL,
+    quantity INT NOT NULL,
+    reserved_quantity INT NOT NULL,
+    last_restocked TIMESTAMP,
+    updated_at TIMESTAMP,
+    UNIQUE(product_id, warehouse_id)
+);
+
+CREATE TABLE audit_trail (
+    audit_id INT PRIMARY KEY,
+    table_name STRING NOT NULL,
+    operation STRING NOT NULL,
+    record_id INT,
+    user_id INT,
+    changes JSONB,
+    ip_address INET,
+    created_at TIMESTAMP
+);
 EOF
 
 echo "Lab 4 Setup Complete."
