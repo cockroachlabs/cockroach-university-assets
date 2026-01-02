@@ -81,6 +81,9 @@ CREATE TABLE audit_trail (
     ip_address INET,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create publication for all tables (for replication)
+CREATE PUBLICATION molt_fetch FOR ALL TABLES;
 EOF
 
 # 6. Insert Initial Dataset
