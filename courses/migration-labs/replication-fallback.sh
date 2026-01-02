@@ -1,8 +1,22 @@
 #!/bin/bash
 set -euxo pipefail
 
+# Install pglogical extension
+echo "Installing pglogical extension..."
+apt-get update
+apt-get install -y postgresql-14-pglogical
+
+# Restart PostgreSQL to load the extension
+systemctl restart postgresql
+
+# Wait for PostgreSQL to be ready
+sleep 5
+
 # Create database
 sudo -u postgres psql -c "CREATE DATABASE production_db;"
+
+# Create pglogical extension in the database
+sudo -u postgres psql -d production_db -c "CREATE EXTENSION pglogical;"
 
 # 5. Create Source Schema
 echo "Populating PostgreSQL source..."
@@ -63,9 +77,6 @@ CREATE TABLE audit_trail (
     ip_address INET,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Create Publication
-CREATE PUBLICATION molt_publication FOR ALL TABLES;
 EOF
 
 # 6. Insert Initial Dataset
