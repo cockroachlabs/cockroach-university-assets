@@ -6,6 +6,10 @@ echo "Installing pglogical extension..."
 apt-get update
 apt-get install -y postgresql-14-pglogical
 
+# Add pglogical to shared_preload_libraries
+echo "Configuring pglogical in postgresql.conf..."
+echo "shared_preload_libraries = 'pglogical'" >> /etc/postgresql/14/main/postgresql.conf
+
 # Restart PostgreSQL to load the extension
 systemctl restart postgresql
 
