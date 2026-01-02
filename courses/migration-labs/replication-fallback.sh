@@ -82,8 +82,8 @@ CREATE TABLE audit_trail (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create publication for all tables (for replication)
-CREATE PUBLICATION molt_fetch FOR ALL TABLES;
+-- Create publication for user tables only (not pglogical metadata)
+CREATE PUBLICATION molt_fetch FOR TABLE users, orders, order_items, inventory, audit_trail;
 EOF
 
 # 6. Insert Initial Dataset
