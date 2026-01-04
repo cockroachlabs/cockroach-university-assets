@@ -84,6 +84,9 @@ CREATE TABLE audit_trail (
 
 -- Create publication for user tables only (not pglogical metadata)
 CREATE PUBLICATION molt_fetch FOR TABLE users, orders, order_items, inventory, audit_trail;
+
+-- Create logical replication slot for continuous replication
+SELECT pg_create_logical_replication_slot('molt_replication_slot', 'pgoutput');
 EOF
 
 # 6. Insert Initial Dataset
