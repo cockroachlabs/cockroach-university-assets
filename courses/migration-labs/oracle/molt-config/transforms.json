@@ -1,0 +1,13 @@
+{
+  "transforms": [
+    {
+      "id": 1,
+      "resource_specifier": {
+        "schema": "APP_USER"
+      },
+      "schema_rename_opts": {
+        "value": "public"
+      }
+    }
+  ]
+}

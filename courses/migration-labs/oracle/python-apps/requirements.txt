@@ -1,0 +1,8 @@
+# Python dependencies for Oracle and CockroachDB workload generators
+
+# Oracle database driver (use either cx_Oracle or oracledb)
+cx_Oracle>=8.3.0
+oracledb>=1.4.0
+
+# PostgreSQL/CockroachDB driver
+psycopg2-binary>=2.9.0
