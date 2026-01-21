@@ -105,14 +105,13 @@ cat > $ORACLE_HOME/dbs/initFREE.ora << 'INITEOF'
 db_name=FREE
 memory_target=2G
 processes=300
-audit_file_dest=/opt/oracle/admin/FREE/adump
-audit_trail=db
 db_block_size=8192
 compatible=23.0.0
 control_files=(/opt/oracle/oradata/FREE/control01.ctl)
 enable_pluggable_database=true
 undo_tablespace=UNDOTBS1
 db_recovery_file_dest=/opt/oracle/fast_recovery_area
+db_recovery_file_dest_size=10G
 INITEOF
 
 echo "[INFO] Creating password file..."
