@@ -56,7 +56,7 @@ The track now downloads and executes `oracle-docker.sh` instead of the native Or
 
 | Step | Old Command | New Command |
 |------|------------|-------------|
-| Step 2 | `sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1` | `docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1` |
+| Step 2 | `sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1` | `docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1` |
 | Step 7 | `sqlplus -s APP_USER/...` | `docker exec oracle-source bash -c "sqlplus -s APP_USER/..."` |
 | Step 8 | `sqlplus -s APP_USER/...` | `docker exec oracle-source bash -c "sqlplus -s APP_USER/..."` |
 | Step 9 | `sqlplus APP_USER/...` | `docker exec oracle-source bash -c "sqlplus APP_USER/..."` |
@@ -102,7 +102,7 @@ The track now downloads and executes `oracle-docker.sh` instead of the native Or
 **From Host (VM):**
 ```bash
 # Interactive SQL*Plus
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 
 # Non-interactive SQL commands
 docker exec oracle-source bash -c "sqlplus -s APP_USER/apppass@//localhost:1521/FREEPDB1 <<EOF
@@ -136,13 +136,13 @@ Created in `/root/oracle/`:
 ### 1. `connect_oracle_app.sh`
 ```bash
 #!/bin/bash
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 ```
 
 ### 2. `connect_oracle_migration.sh`
 ```bash
 #!/bin/bash
-docker exec -it oracle-source sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
+docker exec -i oracle-source sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
 ```
 
 ### 3. `oracle_exec.sh`
@@ -207,7 +207,7 @@ docker exec oracle-source bash -c "echo 'SELECT status FROM v\$instance;' | sqlp
 
 ```bash
 # Test APP_USER connection
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 
 # Inside SQL*Plus, check row counts
 SELECT COUNT(*) FROM orders;

@@ -71,7 +71,7 @@ done
 
 ```bash
 # Interactive SQL*Plus
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 
 # Execute SQL from host
 docker exec oracle-source bash -c "sqlplus -s APP_USER/apppass@//localhost:1521/FREEPDB1 <<EOF
@@ -181,7 +181,7 @@ connection = oracledb.connect(
 
 **SQL*Plus:**
 ```bash
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 ```
 
 ---
@@ -238,7 +238,7 @@ EOF
 docker exec oracle-source bash -c "lsnrctl status"
 
 # Interactive shell
-docker exec -it oracle-source bash
+docker exec -i oracle-source bash
 ```
 
 ### Remove Container
@@ -453,7 +453,7 @@ docker run -d \
 **Modify container after startup:**
 ```bash
 # Connect as SYSDBA
-docker exec -it oracle-source sqlplus / as sysdba
+docker exec -i oracle-source sqlplus / as sysdba
 
 # Modify configuration
 ALTER SYSTEM SET processes=200 SCOPE=SPFILE;

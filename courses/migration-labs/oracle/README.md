@@ -83,7 +83,7 @@ The `oracle-docker.sh` script does the following:
 
 **Interactive SQL*Plus (inside container):**
 ```bash
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 ```
 
 **Execute SQL from host:**

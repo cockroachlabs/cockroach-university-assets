@@ -178,14 +178,14 @@ echo "[INFO] Creating connection helper scripts..."
 # Oracle connection script for APP_USER
 cat > /root/oracle/connect_oracle_app.sh << 'EOF'
 #!/bin/bash
-docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -i oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 EOF
 chmod +x /root/oracle/connect_oracle_app.sh
 
 # Oracle connection script for MIGRATION_USER
 cat > /root/oracle/connect_oracle_migration.sh << 'EOF'
 #!/bin/bash
-docker exec -it oracle-source sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
+docker exec -i oracle-source sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
 EOF
 chmod +x /root/oracle/connect_oracle_migration.sh
 
