@@ -214,13 +214,39 @@ INITEOF
 echo "[INFO] Creating password file..."
 $ORACLE_HOME/bin/orapwd file=$ORACLE_HOME/dbs/orapwFREE password='Cr0ckr0@ch#2026' entries=10
 
-# Create database
-echo "[INFO] Creating database..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
--- Start instance in NOMOUNT mode
+# Use DBCA with response file (simplest and most reliable method)
+echo "[INFO] Creating database with DBCA (this takes 5-10 minutes)..."
+
+# Create DBCA response file
+cat > /tmp/dbca_free.rsp << 'DBCA_EOF'
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v23.0.0
+gdbName=FREE
+sid=FREE
+databaseConfigType=SI
+createAsContainerDatabase=true
+numberOfPDBs=1
+pdbName=FREEPDB1
+pdbAdminPassword=Cr0ckr0@ch#2026
+templateName=General_Purpose.dbc
+sysPassword=Cr0ckr0@ch#2026
+systemPassword=Cr0ckr0@ch#2026
+storageType=FS
+datafileDestination=/opt/oracle/oradata
+characterSet=AL32UTF8
+nationalCharacterSet=AL16UTF16
+listeners=LISTENER
+memoryPercentage=40
+automaticMemoryManagement=true
+DBCA_EOF
+
+# Run DBCA in silent mode
+$ORACLE_HOME/bin/dbca -silent -createDatabase -responseFile /tmp/dbca_free.rsp || {
+    echo "[WARNING] DBCA failed, trying alternative method..."
+
+    # Alternative: Create minimal database manually
+    $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 STARTUP NOMOUNT PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
 
--- Create the database
 CREATE DATABASE FREE
   USER SYS IDENTIFIED BY "Cr0ckr0@ch#2026"
   USER SYSTEM IDENTIFIED BY "Cr0ckr0@ch#2026"
@@ -235,63 +261,25 @@ CREATE DATABASE FREE
   CHARACTER SET AL32UTF8
   NATIONAL CHARACTER SET AL16UTF16
   EXTENT MANAGEMENT LOCAL
-  DATAFILE '/opt/oracle/oradata/FREE/system01.dbf' SIZE 700M REUSE AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
-  SYSAUX DATAFILE '/opt/oracle/oradata/FREE/sysaux01.dbf' SIZE 550M REUSE AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
-  DEFAULT TABLESPACE users DATAFILE '/opt/oracle/oradata/FREE/users01.dbf' SIZE 500M REUSE AUTOEXTEND ON MAXSIZE UNLIMITED
-  DEFAULT TEMPORARY TABLESPACE temp TEMPFILE '/opt/oracle/oradata/FREE/temp01.dbf' SIZE 100M REUSE AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
-  UNDO TABLESPACE undotbs1 DATAFILE '/opt/oracle/oradata/FREE/undotbs01.dbf' SIZE 200M REUSE AUTOEXTEND ON NEXT 5M MAXSIZE UNLIMITED
+  DATAFILE '/opt/oracle/oradata/FREE/system01.dbf' SIZE 700M AUTOEXTEND ON
+  SYSAUX DATAFILE '/opt/oracle/oradata/FREE/sysaux01.dbf' SIZE 550M AUTOEXTEND ON
+  DEFAULT TABLESPACE users DATAFILE '/opt/oracle/oradata/FREE/users01.dbf' SIZE 500M AUTOEXTEND ON
+  DEFAULT TEMPORARY TABLESPACE temp TEMPFILE '/opt/oracle/oradata/FREE/temp01.dbf' SIZE 100M AUTOEXTEND ON
+  UNDO TABLESPACE undotbs1 DATAFILE '/opt/oracle/oradata/FREE/undotbs01.dbf' SIZE 200M AUTOEXTEND ON
   ENABLE PLUGGABLE DATABASE;
 
--- Open the database
 ALTER DATABASE OPEN;
-
-EXIT;
-SQLEOF
-
-# Run catalog scripts (takes 5-10 minutes, will disconnect at end - this is normal)
-echo "[INFO] Building data dictionary (catalog.sql - takes ~5 minutes)..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
-@?/rdbms/admin/catalog.sql
-EXIT;
-SQLEOF
-
-echo "[INFO] Building PL/SQL packages (catproc.sql - takes ~5 minutes)..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
-@?/rdbms/admin/catproc.sql
-EXIT;
-SQLEOF
-
-# Restart database cleanly and create PDB
-echo "[INFO] Restarting database and creating SPFILE..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
--- Clean restart using PFILE
+CREATE SPFILE FROM PFILE;
 SHUTDOWN IMMEDIATE;
-STARTUP PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
+STARTUP;
 
--- Create SPFILE for automatic startup
-CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
-
-EXIT;
-SQLEOF
-
-echo "[INFO] Creating pluggable database FREEPDB1..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
--- Create PDB
-CREATE PLUGGABLE DATABASE FREEPDB1
-  ADMIN USER pdbadmin IDENTIFIED BY "Cr0ckr0@ch#2026"
-  FILE_NAME_CONVERT=('/opt/oracle/oradata/FREE/pdbseed/','/opt/oracle/oradata/FREE/FREEPDB1/');
-
--- Open all PDBs
+CREATE PLUGGABLE DATABASE FREEPDB1 ADMIN USER pdbadmin IDENTIFIED BY "Cr0ckr0@ch#2026";
 ALTER PLUGGABLE DATABASE ALL OPEN;
 ALTER PLUGGABLE DATABASE ALL SAVE STATE;
 
--- Show final status
-SELECT instance_name, status FROM v$instance;
-SELECT name, open_mode FROM v$database;
-SELECT name, open_mode FROM v$pdbs;
-
 EXIT;
 SQLEOF
+}
 
 echo "[INFO] ✅ Database created and opened"
 EOF
