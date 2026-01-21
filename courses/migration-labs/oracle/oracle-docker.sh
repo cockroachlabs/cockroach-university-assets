@@ -2,71 +2,70 @@
 set -euxo pipefail
 
 echo "[INFO] ============================================"
-echo "[INFO] Oracle Migration Lab Setup (Using Pre-configured Host Image)"
+echo "[INFO] Oracle Docker Setup for Migration Lab"
 echo "[INFO] ============================================"
 
-## This script assumes Oracle Database 23ai Free is already installed in the host image
-## It configures schemas, users, and downloads resources for the migration lab
+## INSTALL DOCKER (if not already installed)
+if ! command -v docker &> /dev/null; then
+    echo "[INFO] Installing Docker..."
 
-# Set environment variables
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
+    # Install Docker using official script
+    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+    sh /tmp/get-docker.sh
 
-# Also set for current user
-if ! grep -q "ORACLE_HOME" ~/.bashrc 2>/dev/null; then
-    cat >> ~/.bashrc << 'EOF'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
-EOF
+    # Start Docker service
+    systemctl start docker
+    systemctl enable docker
+
+    echo "[INFO] ✅ Docker installed"
+else
+    echo "[INFO] Docker already installed"
 fi
 
-source ~/.bashrc || true
+# Verify Docker is running
+systemctl status docker --no-pager || systemctl start docker
 
-# Verify Oracle is installed
-if [ ! -f "$ORACLE_HOME/bin/sqlplus" ]; then
-    echo "[ERROR] Oracle is not installed at $ORACLE_HOME"
-    echo "[ERROR] This script requires a host image with Oracle pre-installed"
-    exit 1
-fi
+## CREATE DOCKER NETWORK
+echo "[INFO] Creating Docker network..."
+docker network create molt-network 2>/dev/null || echo "[INFO] Network molt-network already exists"
 
-# Check if database is running
-echo "[INFO] Checking Oracle Database status..."
-if ! pgrep -f "ora_pmon_FREE" > /dev/null; then
-    echo "[INFO] Starting Oracle Database..."
-    sudo systemctl start oracle-free.service || {
-        # Fallback to manual start
-        sudo -u oracle bash << 'EOF'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
-$ORACLE_HOME/bin/lsnrctl start
-$ORACLE_HOME/bin/dbstart $ORACLE_HOME
-EOF
-    }
-    sleep 15
-fi
+## PULL ORACLE DOCKER IMAGE
+echo "[INFO] Pulling Oracle Docker image (this may take 5-10 minutes)..."
+docker pull container-registry.oracle.com/database/free:latest
 
-# Verify database is now running
-if ! pgrep -f "ora_pmon_FREE" > /dev/null; then
-    echo "[ERROR] Oracle Database failed to start"
-    exit 1
-fi
+## START ORACLE CONTAINER
+echo "[INFO] Starting Oracle container..."
+docker rm -f oracle-source 2>/dev/null || true
 
-echo "[INFO] ✅ Oracle Database is running"
+docker run -d \
+  --name oracle-source \
+  --network molt-network \
+  -p 1521:1521 \
+  -p 5500:5500 \
+  -e ORACLE_PWD=CockroachDB_123 \
+  container-registry.oracle.com/database/free:latest
+
+echo "[INFO] Oracle container started, waiting for database to be ready..."
+
+## WAIT FOR ORACLE TO BE READY
+MAX_WAIT=300  # 5 minutes
+COUNTER=0
+until docker exec oracle-source bash -c "echo 'SELECT 1 FROM DUAL;' | sqlplus -s sys/CockroachDB_123@//localhost:1521/FREE as sysdba" &>/dev/null; do
+    sleep 10
+    COUNTER=$((COUNTER + 10))
+    if [ $COUNTER -ge $MAX_WAIT ]; then
+        echo "[ERROR] Oracle database failed to start within ${MAX_WAIT} seconds"
+        docker logs oracle-source
+        exit 1
+    fi
+    echo "[INFO] Waiting for Oracle... (${COUNTER}s elapsed)"
+done
+
+echo "[INFO] ✅ Oracle database is ready"
 
 ## ENABLE ARCHIVELOG MODE (Required for CDC/Replicator)
-echo "[INFO] Enabling ARCHIVELOG mode for CDC support..."
-sudo su - oracle << 'ORACLE_SETUP'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-
-sqlplus / as sysdba << EOF
+echo "[INFO] Enabling ARCHIVELOG mode..."
+docker exec oracle-source bash -c "sqlplus / as sysdba" <<'EOF'
 SHUTDOWN IMMEDIATE;
 STARTUP MOUNT;
 ALTER DATABASE ARCHIVELOG;
@@ -75,16 +74,10 @@ ALTER DATABASE FORCE LOGGING;
 ALTER SYSTEM SET enable_goldengate_replication=TRUE SCOPE=BOTH;
 EXIT;
 EOF
-ORACLE_SETUP
 
-## CREATE MIGRATION USER (Common user for CDB and PDB)
-echo "[INFO] Creating migration user C##MIGRATION_USER..."
-sudo su - oracle << 'ORACLE_USER'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-
-sqlplus / as sysdba << EOF
+## CREATE MIGRATION USER
+echo "[INFO] Creating C##MIGRATION_USER..."
+docker exec oracle-source bash -c "sqlplus / as sysdba" <<'EOF'
 -- Create common migration user
 CREATE USER C##MIGRATION_USER IDENTIFIED BY migpass CONTAINER=ALL;
 GRANT CONNECT, RESOURCE TO C##MIGRATION_USER CONTAINER=ALL;
@@ -100,27 +93,31 @@ GRANT ALTER TABLESPACE TO C##MIGRATION_USER CONTAINER=ALL;
 GRANT UNLIMITED TABLESPACE TO C##MIGRATION_USER CONTAINER=ALL;
 
 -- Grant additional privileges for LogMiner
-GRANT SELECT ON V_\$DATABASE TO C##MIGRATION_USER CONTAINER=ALL;
-GRANT SELECT ON V_\$LOG TO C##MIGRATION_USER CONTAINER=ALL;
-GRANT SELECT ON V_\$LOGFILE TO C##MIGRATION_USER CONTAINER=ALL;
-GRANT SELECT ON V_\$ARCHIVED_LOG TO C##MIGRATION_USER CONTAINER=ALL;
+GRANT SELECT ON V_$DATABASE TO C##MIGRATION_USER CONTAINER=ALL;
+GRANT SELECT ON V_$LOG TO C##MIGRATION_USER CONTAINER=ALL;
+GRANT SELECT ON V_$LOGFILE TO C##MIGRATION_USER CONTAINER=ALL;
+GRANT SELECT ON V_$ARCHIVED_LOG TO C##MIGRATION_USER CONTAINER=ALL;
 GRANT EXECUTE ON DBMS_LOGMNR TO C##MIGRATION_USER CONTAINER=ALL;
 GRANT EXECUTE ON DBMS_LOGMNR_D TO C##MIGRATION_USER CONTAINER=ALL;
 
 EXIT;
 EOF
-ORACLE_USER
 
-## INSTALL PYTHON ORACLE DEPENDENCIES (if not already installed)
+## INSTALL PYTHON ORACLE DEPENDENCIES
 echo "[INFO] Installing Python Oracle dependencies..."
-if command -v dnf &> /dev/null; then
+if command -v apt-get &> /dev/null; then
+    PKG_MGR="apt-get"
+    apt-get update
+    apt-get install -y python3-pip python3-dev gcc
+elif command -v dnf &> /dev/null; then
     PKG_MGR="dnf"
+    dnf install -y python3-pip python3-devel gcc
 else
     PKG_MGR="yum"
+    yum install -y python3-pip python3-devel gcc
 fi
 
-sudo ${PKG_MGR} install -y python3-pip python3-devel gcc || true
-pip3 install cx_Oracle oracledb --user || echo "[WARNING] Python packages may already be installed"
+pip3 install cx_Oracle oracledb --break-system-packages 2>/dev/null || pip3 install cx_Oracle oracledb
 
 ## DOWNLOAD SQL SCRIPTS, PYTHON APPS, AND MOLT CONFIGS
 echo "[INFO] Downloading Oracle migration resources from GitHub..."
@@ -157,14 +154,14 @@ chmod +x ${ORACLE_DIR}/python-apps/*.py
 
 ## EXECUTE ORACLE SOURCE SCHEMA CREATION
 echo "[INFO] Creating Oracle source schema..."
-sudo su - oracle << ORACLE_SCHEMA
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
 
-sqlplus / as sysdba @${ORACLE_DIR}/sql-scripts/oracle_source_schema.sql
-sqlplus / as sysdba @${ORACLE_DIR}/sql-scripts/oracle_source_data.sql
-ORACLE_SCHEMA
+# Copy SQL scripts into container
+docker cp ${ORACLE_DIR}/sql-scripts/oracle_source_schema.sql oracle-source:/tmp/
+docker cp ${ORACLE_DIR}/sql-scripts/oracle_source_data.sql oracle-source:/tmp/
+
+# Execute schema and data creation
+docker exec oracle-source bash -c "sqlplus / as sysdba @/tmp/oracle_source_schema.sql"
+docker exec oracle-source bash -c "sqlplus / as sysdba @/tmp/oracle_source_data.sql"
 
 ## CREATE CRDB TARGET SCHEMA (only if CockroachDB is running)
 if command -v cockroach &> /dev/null && pgrep -f cockroach > /dev/null; then
@@ -181,20 +178,14 @@ echo "[INFO] Creating connection helper scripts..."
 # Oracle connection script for APP_USER
 cat > /root/oracle/connect_oracle_app.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 EOF
 chmod +x /root/oracle/connect_oracle_app.sh
 
 # Oracle connection script for MIGRATION_USER
 cat > /root/oracle/connect_oracle_migration.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-export ORACLE_SID=FREE
-export PATH=$ORACLE_HOME/bin:$PATH
-sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
+docker exec -it oracle-source sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
 EOF
 chmod +x /root/oracle/connect_oracle_migration.sh
 
@@ -205,12 +196,31 @@ cockroach sql --insecure -d target
 EOF
 chmod +x /root/oracle/connect_crdb.sh
 
+# Create helper script to run SQL commands in Oracle
+cat > /root/oracle/oracle_exec.sh << 'EOF'
+#!/bin/bash
+# Helper script to execute SQL commands in Oracle container
+# Usage: ./oracle_exec.sh "SELECT * FROM orders;"
+docker exec oracle-source bash -c "echo \"$1\" | sqlplus -s APP_USER/apppass@//localhost:1521/FREEPDB1"
+EOF
+chmod +x /root/oracle/oracle_exec.sh
+
 echo "[INFO] ============================================"
-echo "[INFO] Oracle Database 23ai Free configuration complete!"
+echo "[INFO] Oracle Docker Setup Complete!"
 echo "[INFO] ============================================"
-echo "[INFO] Oracle resources available at: ${ORACLE_DIR}"
+echo "[INFO] Oracle Container: oracle-source"
+echo "[INFO] Oracle Port: 1521"
+echo "[INFO] Oracle PDB: FREEPDB1"
+echo "[INFO] Passwords:"
+echo "[INFO]   - SYS/SYSTEM: CockroachDB_123"
+echo "[INFO]   - C##MIGRATION_USER: migpass"
+echo "[INFO]   - APP_USER: apppass"
+echo "[INFO] ============================================"
 echo "[INFO] Connection scripts:"
 echo "[INFO]   - /root/oracle/connect_oracle_app.sh"
 echo "[INFO]   - /root/oracle/connect_oracle_migration.sh"
 echo "[INFO]   - /root/oracle/connect_crdb.sh"
+echo "[INFO]   - /root/oracle/oracle_exec.sh"
+echo "[INFO] ============================================"
+echo "[INFO] Oracle resources available at: ${ORACLE_DIR}"
 echo "[INFO] ============================================"

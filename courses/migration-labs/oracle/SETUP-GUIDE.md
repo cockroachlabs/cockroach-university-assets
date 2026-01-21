@@ -1,126 +1,58 @@
-# Oracle Host Image Setup Guide
+# Oracle Docker Setup Guide
 
 ## Overview
 
-This guide explains how to create an Instruqt host image with Oracle 23ai pre-installed for fast lab startup times.
-
-## Two-Phase Approach
-
-### Phase 1: Create Host Image (One-time, ~20 minutes)
-Use `install-oracle-hostimage.sh` to create a host image with Oracle fully installed.
-
-### Phase 2: Lab Runtime (Every track run, ~2-3 minutes)
-Use `oracle-setup-existing.sh` to configure schemas and users for each learner.
+This guide explains how to use Docker-based Oracle for CockroachDB migration labs on Instruqt.
 
 ---
 
-## Phase 1: Creating the Host Image
+## Architecture
 
-### Step 1: Start Fresh Instruqt VM
+### Docker-Based Setup (Current)
 
-Create a new Instruqt sandbox with:
-- **OS**: CentOS Stream 9 or Rocky Linux 9
-- **Memory**: At least 4GB RAM
-- **Disk**: At least 20GB
+**Advantages:**
+- ✅ Fast setup (5-10 minutes with image pull, 2-3 minutes after)
+- ✅ Official Oracle image (stable and maintained)
+- ✅ Fully automated (no manual steps)
+- ✅ Easy to manage (start/stop/remove container)
+- ✅ Proven approach (based on working demos)
 
-### Step 2: Download and Run Installation Script
-
-```bash
-# Download the host image installation script
-curl -fsSL https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/migration-labs/oracle/install-oracle-hostimage.sh -o /tmp/install-oracle.sh
-
-# Make it executable
-chmod +x /tmp/install-oracle.sh
-
-# Run it (takes ~15-20 minutes)
-bash /tmp/install-oracle.sh
-```
-
-**IMPORTANT:** During execution, you will be prompted to enter a password **3 times**:
-
-```
-Specify a password to be used for database accounts...
-Note that the same password will be used for SYS, SYSTEM and PDBADMIN accounts:
-```
-
-**Enter this password:** `CockroachDB_123`
-
-You'll need to enter it for:
-1. SYS user password
-2. SYSTEM user password
-3. PDBADMIN user password
-
-The configuration process takes **5-15 minutes** after you enter the passwords. Be patient and let it complete.
-
-### Step 3: Verify Oracle Installation
-
-After the script completes, verify:
-
-```bash
-# Check Oracle is running
-pgrep -f ora_pmon_FREE && echo "✅ Oracle is running"
-
-# Check database files exist
-ls -la /opt/oracle/oradata/FREE/
-
-# Test connection
-sudo -u oracle sqlplus / as sysdba <<< "SELECT status FROM v\$instance;"
-```
-
-You should see:
-```
-STATUS
-------------
-OPEN
-```
-
-### Step 4: Save as Host Image
-
-In Instruqt:
-1. Stop the sandbox
-2. Save it as a custom host image
-3. Name it something like: `oracle-23ai-free-ready`
-
-### What's Included in the Host Image
-
-✅ Oracle Database 23ai Free installed
-✅ Listener configured on port 1521
-✅ Database FREE (CDB) created and running
-✅ PDB FREEPDB1 created
-✅ Auto-start configured (Oracle service)
-✅ Password: `CockroachDB_123`
+**How it works:**
+1. `oracle-docker.sh` installs Docker and pulls Oracle Free image
+2. Starts Oracle container named `oracle-source`
+3. Waits for Oracle to be ready
+4. Configures ARCHIVELOG mode and creates users
+5. Creates schema and loads sample data
+6. Downloads MOLT configs and Python apps
 
 ---
 
-## Phase 2: Using the Host Image in Tracks
+## Quick Start
 
-### Step 1: Configure Your Instruqt Track
+### Step 1: Add to Your Instruqt Track
 
-In your track configuration:
+**Track Configuration (config.yml):**
 
 ```yaml
 version: "3"
-type: track
-containers:
-- name: oracle-migration
-  image: oracle-23ai-free-ready  # Your custom host image
-  ports:
-  - 1521  # Oracle
-  - 26257 # CockroachDB
-  - 8080  # CockroachDB UI
+virtualmachines:
+- name: migration-lab
+  image: ubuntu-2204-lts  # Standard Ubuntu image
+  machine_type: n1-standard-4
 ```
 
-### Step 2: Update Setup Script
-
-Your track's setup script should use:
+**Track Setup Script:**
 
 ```bash
+#!/bin/bash
+set -euxo pipefail
+
 SCRIPTS=(
-    "base-redhat/01-redhat.sh"
-    "base-redhat/cockroachdb.sh"
-    "base-redhat/cockroachdb-start.sh"
+    "base/01-ubuntu.sh"
+    "base/cockroachdb.sh"
+    "base/cockroachdb-start.sh"
     "courses/migration-labs/molt.sh"
-    "courses/migration-labs/oracle/oracle-setup-existing.sh"  # ← Fast setup
+    "courses/migration-labs/oracle/oracle-docker.sh"  # ← Oracle Docker setup
 )
 
 BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/"
@@ -133,132 +65,476 @@ for SCRIPT_PATH in "${SCRIPTS[@]}"; do
 done
 ```
 
-### What oracle-setup-existing.sh Does
+### Step 2: Use Docker Commands in Assignment
 
-1. ✅ Starts Oracle (if not running)
-2. ✅ Enables ARCHIVELOG mode for CDC
-3. ✅ Creates C##MIGRATION_USER with privileges
-4. ✅ Creates APP_USER schema
-5. ✅ Loads sample data
-6. ✅ Downloads MOLT configs and Python apps
-7. ✅ Creates CockroachDB target schema
-8. ✅ Sets up connection helper scripts
-
-**Time**: ~2-3 minutes
-
----
-
-## Credentials and Connection Info
-
-### System Passwords (in host image)
-- **SYS**: `CockroachDB_123`
-- **SYSTEM**: `CockroachDB_123`
-- **PDBADMIN**: `CockroachDB_123`
-
-### Application Users (created by oracle-setup-existing.sh)
-- **C##MIGRATION_USER**: `migpass`
-- **APP_USER**: `apppass`
-
-### Connection Strings
+**Connecting to Oracle:**
 
 ```bash
-# Oracle CDB (as SYS)
-sqlplus sys/CockroachDB_123@localhost:1521/FREE as sysdba
+# Interactive SQL*Plus
+docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
 
-# Oracle PDB (as APP_USER)
-sqlplus APP_USER/apppass@localhost:1521/FREEPDB1
-
-# Oracle (as MIGRATION_USER)
-sqlplus 'C##MIGRATION_USER/migpass@localhost:1521/FREE'
-
-# CockroachDB
-cockroach sql --insecure -d target
+# Execute SQL from host
+docker exec oracle-source bash -c "sqlplus -s APP_USER/apppass@//localhost:1521/FREEPDB1 <<EOF
+SELECT COUNT(*) FROM orders;
+EXIT;
+EOF
+"
 ```
 
-### Helper Scripts (created in /root/oracle/)
+**Helper Scripts:**
 
 ```bash
-/root/oracle/connect_oracle_app.sh          # Connect as APP_USER
-/root/oracle/connect_oracle_migration.sh    # Connect as MIGRATION_USER
-/root/oracle/connect_crdb.sh                # Connect to CockroachDB
+/root/oracle/connect_oracle_app.sh        # Connect as APP_USER
+/root/oracle/connect_oracle_migration.sh  # Connect as MIGRATION_USER
+/root/oracle/oracle_exec.sh "SELECT * FROM orders;"  # Execute SQL
 ```
 
 ---
 
-## Performance Comparison
+## What Gets Configured
 
-| Method | Setup Time | Notes |
-|--------|------------|-------|
-| **Without host image** | 25-45 min | Downloads Oracle, converts RPM to DEB with alien |
-| **With host image** | 2-3 min | Oracle pre-installed, just configure schemas |
-| **Time saved** | ~20-40 min | Per learner! |
+### Oracle Container
+
+- **Name:** `oracle-source`
+- **Image:** `container-registry.oracle.com/database/free:latest`
+- **Network:** `molt-network` (Docker bridge)
+- **Ports:** 1521 (Oracle), 5500 (Oracle EM)
+- **Database:** FREE (CDB)
+- **PDB:** FREEPDB1
+
+### Users and Passwords
+
+**System Accounts:**
+- **SYS:** `CockroachDB_123`
+- **SYSTEM:** `CockroachDB_123`
+- **PDBADMIN:** `CockroachDB_123`
+
+**Application Accounts:**
+- **C##MIGRATION_USER:** `migpass` (CDC/LogMiner user)
+- **APP_USER:** `apppass` (schema owner)
+
+### Schema (APP_USER)
+
+**Tables:**
+- `orders` (100+ rows)
+- `order_fills` (100+ rows)
+
+**Sequences:**
+- `order_seq`
+- `order_fill_seq`
+
+**Triggers:**
+- `order_set_id` (auto-increment for orders)
+- `order_fill_set_id` (auto-increment for order_fills)
+
+**View:**
+- `orcl_order_fills_view`
+
+### Files Downloaded to /root/oracle/
+
+```
+/root/oracle/
+├── sql-scripts/
+│   ├── oracle_source_schema.sql
+│   ├── oracle_source_data.sql
+│   ├── crdb_target_schema.sql
+│   └── verification_queries.sql
+├── python-apps/
+│   ├── oracle-workload.py
+│   ├── cockroach-workload.py
+│   └── requirements.txt
+├── molt-config/
+│   ├── transforms.json
+│   ├── molt_fetch.sh
+│   ├── molt_verify.sh
+│   └── start_replicator.sh
+└── connect_*.sh (helper scripts)
+```
+
+---
+
+## Connection Information
+
+### From Host (VM)
+
+**MOLT Connection Strings:**
+```bash
+# Source PDB (for data access)
+oracle://C%23%23MIGRATION_USER:migpass@localhost:1521/FREEPDB1
+
+# Source CDB (for metadata)
+oracle://C%23%23MIGRATION_USER:migpass@localhost:1521/FREE
+
+# Target CockroachDB
+postgres://root@localhost:26257/target?sslmode=disable
+```
+
+**Python Connection:**
+```python
+import oracledb
+connection = oracledb.connect(
+    user="APP_USER",
+    password="apppass",
+    dsn="localhost:1521/FREEPDB1"
+)
+```
+
+**SQL*Plus:**
+```bash
+docker exec -it oracle-source sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+```
+
+---
+
+## Docker Container Management
+
+### Check Status
+
+```bash
+# Check if container is running
+docker ps | grep oracle-source
+
+# Check database status
+docker exec oracle-source bash -c "echo 'SELECT status FROM v\$instance;' | sqlplus -s / as sysdba"
+```
+
+### Start/Stop/Restart
+
+```bash
+# Stop Oracle container
+docker stop oracle-source
+
+# Start Oracle container
+docker start oracle-source
+
+# Restart Oracle container
+docker restart oracle-source
+```
+
+### View Logs
+
+```bash
+# View all logs
+docker logs oracle-source
+
+# Follow logs in real-time
+docker logs -f oracle-source
+
+# View last 100 lines
+docker logs --tail 100 oracle-source
+```
+
+### Execute Commands
+
+```bash
+# Execute SQL*Plus commands
+docker exec oracle-source bash -c "sqlplus / as sysdba <<EOF
+SELECT status FROM v\$instance;
+EXIT;
+EOF
+"
+
+# Execute shell commands
+docker exec oracle-source bash -c "lsnrctl status"
+
+# Interactive shell
+docker exec -it oracle-source bash
+```
+
+### Remove Container
+
+```bash
+# Remove container (will lose all data)
+docker rm -f oracle-source
+
+# Re-run setup to recreate
+/tmp/oracle-docker.sh
+```
+
+---
+
+## MOLT Migration Workflow
+
+### 1. MOLT Fetch (Bulk Migration)
+
+```bash
+# Run MOLT Fetch
+/root/oracle/molt-config/molt_fetch.sh | tee /root/fetch.log
+
+# Capture SCN for replication
+SCN=$(grep 'backfillFromSCN' /root/fetch.log | jq -r '.cdc_cursor' | cut -d'=' -f2 | cut -d',' -f1)
+echo $SCN > /root/scn.txt
+```
+
+### 2. MOLT Verify
+
+```bash
+# Verify data consistency
+/root/oracle/molt-config/molt_verify.sh | tee /root/verify.log
+
+# View summary
+grep 'type.*summary' /root/verify.log | jq
+```
+
+### 3. Replicator (CDC)
+
+```bash
+# Start Replicator with captured SCN
+SCN=$(cat /root/scn.txt)
+nohup /root/oracle/molt-config/start_replicator.sh $SCN > /root/replicator.log 2>&1 &
+echo $! > /root/replicator.pid
+
+# Monitor replication
+tail -f /root/replicator.log
+
+# Stop Replicator
+kill $(cat /root/replicator.pid)
+```
 
 ---
 
 ## Troubleshooting
 
-### Oracle not starting in track
+### Container Won't Start
 
+**Symptom:** `docker ps` doesn't show `oracle-source`
+
+**Check:**
 ```bash
-# Check if Oracle service exists
-systemctl status oracle-free.service
+# Verify Docker is running
+systemctl status docker
 
-# Start manually if needed
-sudo systemctl start oracle-free.service
+# Start Docker if needed
+systemctl start docker
 
-# Or start components directly
-sudo -u oracle bash -c '
-  export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
-  export ORACLE_SID=FREE
-  export PATH=$ORACLE_HOME/bin:$PATH
-  lsnrctl start
-  dbstart $ORACLE_HOME
-'
+# Check for errors
+docker logs oracle-source
 ```
 
-### Check database status
-
+**Fix:**
 ```bash
-# Check processes
-pgrep -f ora_ | wc -l  # Should show multiple Oracle processes
+# Remove failed container
+docker rm -f oracle-source
 
-# Check database
-sudo -u oracle sqlplus / as sysdba <<< "SELECT status FROM v\$instance;"
-
-# Check PDB
-sudo -u oracle sqlplus / as sysdba <<< "SELECT name, open_mode FROM v\$pdbs;"
+# Re-run setup
+bash /tmp/oracle-docker.sh
 ```
 
-### View Oracle logs
+### Oracle Database Not Ready
+
+**Symptom:** Can't connect to Oracle after container starts
+
+**Check:**
+```bash
+# Check database status
+docker exec oracle-source bash -c "echo 'SELECT status FROM v\$instance;' | sqlplus -s / as sysdba"
+
+# Should output: OPEN
+```
+
+**Wait Time:**
+- Normal startup: 2-5 minutes
+- If stuck after 10 minutes, restart:
 
 ```bash
-# Alert log
-tail -100 /opt/oracle/admin/FREE/adump/alert_FREE.log
+docker restart oracle-source
+```
 
-# Listener log
-tail -100 /opt/oracle/diag/tnslsnr/*/listener/trace/listener.log
+### MOLT Can't Connect
+
+**Symptom:** MOLT Fetch fails with connection error
+
+**Check:**
+```bash
+# Verify Oracle is accessible on port 1521
+docker exec oracle-source bash -c "lsnrctl status"
+
+# Test connection
+docker exec oracle-source bash -c "sqlplus C##MIGRATION_USER/migpass@//localhost:1521/FREEPDB1 <<EOF
+SELECT 1 FROM DUAL;
+EXIT;
+EOF
+"
+```
+
+**Fix:**
+```bash
+# Check if ARCHIVELOG is enabled
+docker exec oracle-source bash -c "echo 'SELECT log_mode FROM v\$database;' | sqlplus -s / as sysdba"
+
+# Should output: ARCHIVELOG
+```
+
+### Port Conflict
+
+**Symptom:** Error: "port 1521 is already allocated"
+
+**Check:**
+```bash
+# See what's using port 1521
+netstat -tuln | grep 1521
+```
+
+**Fix:**
+```bash
+# Stop conflicting process
+# OR modify oracle-docker.sh to use different port:
+docker run -p 1522:1521 ...
+```
+
+### Permission Denied Errors
+
+**Symptom:** Docker commands fail with permission errors
+
+**Fix:**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Restart session or run:
+newgrp docker
+```
+
+### Python Apps Can't Connect
+
+**Symptom:** Python workload fails with connection error
+
+**Check:**
+```bash
+# Test Oracle connection from host
+docker exec oracle-source bash -c "sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1 <<EOF
+SELECT 1 FROM DUAL;
+EXIT;
+EOF
+"
+```
+
+**Fix:**
+```bash
+# Ensure Python Oracle libraries are installed
+pip3 install cx_Oracle oracledb --break-system-packages
 ```
 
 ---
 
-## Files Structure
+## Performance Optimization
 
+### Container Resources
+
+**Default allocation:**
+- CPU: Uses available cores
+- Memory: ~1-2 GB
+
+**Limit resources:**
+```bash
+docker run -d \
+  --name oracle-source \
+  --cpus="2" \
+  --memory="2g" \
+  ...
 ```
-courses/migration-labs/oracle/
-├── install-oracle-hostimage.sh    # Phase 1: Create host image
-├── oracle-setup-existing.sh       # Phase 2: Track runtime setup
-├── sql-scripts/                   # SQL files for schemas/data
-├── python-apps/                   # Workload generators
-├── molt-config/                   # MOLT configurations
-├── SETUP-GUIDE.md                 # This file
-└── README.md                      # General documentation
+
+### Persistent Storage
+
+**Add volume for persistence:**
+```bash
+docker run -d \
+  --name oracle-source \
+  -v oracle-data:/opt/oracle/oradata \
+  ...
 ```
 
 ---
 
-## Next Steps
+## Advanced Configuration
 
-1. **Create host image** using `install-oracle-hostimage.sh`
-2. **Test the image** by starting a track with it
-3. **Update track configs** to use your new host image
-4. **Deploy** and enjoy 20-40 minute faster lab startup!
+### Custom Oracle Configuration
+
+**Modify container after startup:**
+```bash
+# Connect as SYSDBA
+docker exec -it oracle-source sqlplus / as sysdba
+
+# Modify configuration
+ALTER SYSTEM SET processes=200 SCOPE=SPFILE;
+SHUTDOWN IMMEDIATE;
+STARTUP;
+```
+
+### Enable Additional Oracle Features
+
+```bash
+# Enable supplemental logging for specific tables
+docker exec oracle-source bash -c "sqlplus / as sysdba <<EOF
+ALTER TABLE APP_USER.orders ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE APP_USER.order_fills ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+EXIT;
+EOF
+"
+```
+
+### Custom Schema
+
+**Add your own schema:**
+```bash
+# Create custom SQL file
+cat > /root/custom_schema.sql <<'EOF'
+CREATE TABLE my_table (
+    id NUMBER PRIMARY KEY,
+    name VARCHAR2(100)
+);
+EOF
+
+# Execute in container
+docker cp /root/custom_schema.sql oracle-source:/tmp/
+docker exec oracle-source bash -c "sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1 @/tmp/custom_schema.sql"
+```
+
+---
+
+## Comparison: Docker vs Native Installation
+
+| Feature | Docker | Native Installation |
+|---------|--------|-------------------|
+| **Setup Time** | 5-10 min (first), 2-3 min (after) | 15-30 min |
+| **Automation** | Fully automated | Manual password entry |
+| **Reliability** | Official Oracle image | DBCA bugs |
+| **Isolation** | Container (easy cleanup) | System-wide |
+| **Port Conflicts** | Easy to remap | Harder to resolve |
+| **Debugging** | Container logs | System logs scattered |
+| **Maintenance** | Pull new image | Manual updates |
+
+---
+
+## Best Practices
+
+1. ✅ **Always check container status** before running MOLT
+2. ✅ **Monitor logs** during first run to ensure successful startup
+3. ✅ **Capture SCN** from MOLT Fetch for replication
+4. ✅ **Test connections** before starting migration
+5. ✅ **Use helper scripts** for consistent connections
+6. ✅ **Keep container running** during entire lab session
+7. ✅ **Document any custom changes** to schema or configuration
+
+---
+
+## Support
+
+For issues or questions:
+1. Review this guide thoroughly
+2. Check Docker and Oracle container logs
+3. Verify network connectivity (port 1521)
+4. Test connections with helper scripts
+5. Contact CockroachDB Education team
+
+---
+
+## Example Tracks
+
+**Working implementation:**
+- Track: `cu-migration-oracle-to-cockroachdb`
+- Location: `/Users/felipeg/Roach/Instruqt/individual-modules/cu-migration-oracle-to-cockroachdb`
+
+**Based on demo:**
+- Demo: Oracle MOLT full pipeline
+- Location: `/Users/felipeg/Roach/Instruqt/oracle-molt/CRL-PS-MOLT-Demos`
