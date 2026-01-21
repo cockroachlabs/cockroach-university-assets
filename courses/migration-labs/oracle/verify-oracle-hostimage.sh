@@ -20,7 +20,7 @@ check() {
 }
 
 # Set environment
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}

@@ -5,11 +5,11 @@ echo "[INFO] ============================================"
 echo "[INFO] Oracle Migration Lab Setup (Using Pre-configured Host Image)"
 echo "[INFO] ============================================"
 
-## This script assumes Oracle AI Database 26ai is already installed in the host image
+## This script assumes Oracle Database 23ai Free is already installed in the host image
 ## It configures schemas, users, and downloads resources for the migration lab
 
 # Set environment variables
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
@@ -17,7 +17,7 @@ export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
 # Also set for current user
 if ! grep -q "ORACLE_HOME" ~/.bashrc 2>/dev/null; then
     cat >> ~/.bashrc << 'EOF'
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
@@ -40,7 +40,7 @@ if ! pgrep -f "ora_pmon_FREE" > /dev/null; then
     sudo systemctl start oracle-free.service || {
         # Fallback to manual start
         sudo -u oracle bash << 'EOF'
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
@@ -62,7 +62,7 @@ echo "[INFO] ✅ Oracle Database is running"
 ## ENABLE ARCHIVELOG MODE (Required for CDC/Replicator)
 echo "[INFO] Enabling ARCHIVELOG mode for CDC support..."
 sudo su - oracle << 'ORACLE_SETUP'
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -80,7 +80,7 @@ ORACLE_SETUP
 ## CREATE MIGRATION USER (Common user for CDB and PDB)
 echo "[INFO] Creating migration user C##MIGRATION_USER..."
 sudo su - oracle << 'ORACLE_USER'
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -158,7 +158,7 @@ chmod +x ${ORACLE_DIR}/python-apps/*.py
 ## EXECUTE ORACLE SOURCE SCHEMA CREATION
 echo "[INFO] Creating Oracle source schema..."
 sudo su - oracle << ORACLE_SCHEMA
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -181,7 +181,7 @@ echo "[INFO] Creating connection helper scripts..."
 # Oracle connection script for APP_USER
 cat > /root/oracle/connect_oracle_app.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
@@ -191,7 +191,7 @@ chmod +x /root/oracle/connect_oracle_app.sh
 # Oracle connection script for MIGRATION_USER
 cat > /root/oracle/connect_oracle_migration.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
@@ -206,7 +206,7 @@ EOF
 chmod +x /root/oracle/connect_crdb.sh
 
 echo "[INFO] ============================================"
-echo "[INFO] Oracle AI Database 26ai configuration complete!"
+echo "[INFO] Oracle Database 23ai Free configuration complete!"
 echo "[INFO] ============================================"
 echo "[INFO] Oracle resources available at: ${ORACLE_DIR}"
 echo "[INFO] Connection scripts:"

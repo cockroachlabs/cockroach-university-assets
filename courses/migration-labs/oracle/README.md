@@ -1,4 +1,4 @@
-# Oracle 26ai Host Image Setup
+# Oracle 23ai Host Image Setup
 
 This directory contains scripts to create an Instruqt host image with Oracle AI Database 26ai Free pre-installed.
 

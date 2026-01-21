@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to create an Instruqt host image with Oracle 26ai pre-installed for fast lab startup times.
+This guide explains how to create an Instruqt host image with Oracle 23ai pre-installed for fast lab startup times.
 
 ## Two-Phase Approach
 
@@ -79,11 +79,11 @@ OPEN
 In Instruqt:
 1. Stop the sandbox
 2. Save it as a custom host image
-3. Name it something like: `oracle-26ai-free-ready`
+3. Name it something like: `oracle-23ai-free-ready`
 
 ### What's Included in the Host Image
 
-✅ Oracle AI Database 26ai Free installed
+✅ Oracle Database 23ai Free installed
 ✅ Listener configured on port 1521
 ✅ Database FREE (CDB) created and running
 ✅ PDB FREEPDB1 created
@@ -103,7 +103,7 @@ version: "3"
 type: track
 containers:
 - name: oracle-migration
-  image: oracle-26ai-free-ready  # Your custom host image
+  image: oracle-23ai-free-ready  # Your custom host image
   ports:
   - 1521  # Oracle
   - 26257 # CockroachDB
@@ -208,7 +208,7 @@ sudo systemctl start oracle-free.service
 
 # Or start components directly
 sudo -u oracle bash -c '
-  export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+  export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
   export ORACLE_SID=FREE
   export PATH=$ORACLE_HOME/bin:$PATH
   lsnrctl start

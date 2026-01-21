@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 echo "[INFO] ============================================"
-echo "[INFO] Installing Oracle AI Database 26ai Free for Host Image"
+echo "[INFO] Installing Oracle Database 23ai Free for Host Image"
 echo "[INFO] This script will install and configure Oracle completely"
 echo "[INFO] Compatible with CentOS Stream 9/10, Rocky Linux 9"
 echo "[INFO] ============================================"
@@ -60,11 +60,11 @@ ls -la /usr/lib64/libaio.so* 2>/dev/null || echo "[WARNING] libaio location may 
 
 ## DOWNLOAD ORACLE RPM
 cd /tmp
-ORACLE_RPM="oracle-ai-database-free-26ai-23.26.0-1.el8.x86_64.rpm"
+ORACLE_RPM="oracle-database-free-23ai-1.0-1.el8.x86_64.rpm"
 ORACLE_RPM_URL="https://download.oracle.com/otn-pub/otn_software/db-free/${ORACLE_RPM}"
 
 if [ ! -f "${ORACLE_RPM}" ]; then
-    echo "[INFO] Downloading Oracle 26ai RPM (~1.4GB, this may take 5-10 minutes)..."
+    echo "[INFO] Downloading Oracle 23ai Free RPM (~1.2GB, this may take 5-10 minutes)..."
     if command -v wget &> /dev/null; then
         wget --progress=dot:giga --timeout=600 --tries=3 "${ORACLE_RPM_URL}" || {
             curl -# -L -o "${ORACLE_RPM}" "${ORACLE_RPM_URL}"
@@ -90,7 +90,7 @@ sudo rpm -ivh --nodeps "${ORACLE_RPM}" || {
 }
 
 ## SET ENVIRONMENT
-export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
@@ -129,7 +129,7 @@ echo "[INFO] ============================================"
 echo ""
 
 # Run Oracle's official configuration script (requires manual password entry)
-sudo /etc/init.d/oracle-free-26ai configure
+sudo /etc/init.d/oracle-free-23ai configure
 
 echo ""
 echo "[INFO] ✅ Database configured"
@@ -152,19 +152,19 @@ echo "[INFO] Configuring Oracle auto-start..."
 sudo bash << 'SYSTEMD_EOF'
 cat > /etc/systemd/system/oracle-free.service << 'SERVICEEOF'
 [Unit]
-Description=Oracle Database 26ai Free
+Description=Oracle Database 23ai Free
 After=network.target
 
 [Service]
 Type=forking
 User=oracle
 Group=oinstall
-Environment="ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree"
+Environment="ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree"
 Environment="ORACLE_SID=FREE"
-Environment="PATH=/opt/oracle/product/26ai/dbhomeFree/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
-Environment="LD_LIBRARY_PATH=/opt/oracle/product/26ai/dbhomeFree/lib"
-ExecStart=/opt/oracle/product/26ai/dbhomeFree/bin/dbstart /opt/oracle/product/26ai/dbhomeFree
-ExecStop=/opt/oracle/product/26ai/dbhomeFree/bin/dbshut /opt/oracle/product/26ai/dbhomeFree
+Environment="PATH=/opt/oracle/product/23ai/dbhomeFree/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+Environment="LD_LIBRARY_PATH=/opt/oracle/product/23ai/dbhomeFree/lib"
+ExecStart=/opt/oracle/product/23ai/dbhomeFree/bin/dbstart /opt/oracle/product/23ai/dbhomeFree
+ExecStop=/opt/oracle/product/23ai/dbhomeFree/bin/dbshut /opt/oracle/product/23ai/dbhomeFree
 RemainAfterExit=yes
 
 [Install]
@@ -181,7 +181,7 @@ echo "[INFO] ✅ Auto-start configured"
 ## FINAL VERIFICATION
 echo ""
 echo "[INFO] ============================================"
-echo "[INFO] ✅ Oracle AI Database 26ai Free Installation Complete!"
+echo "[INFO] ✅ Oracle Database 23ai Free Installation Complete!"
 echo "[INFO] ============================================"
 echo "[INFO] Database: FREE (CDB)"
 echo "[INFO] PDB: FREEPDB1"
