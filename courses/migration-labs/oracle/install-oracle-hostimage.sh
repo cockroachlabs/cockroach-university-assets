@@ -242,23 +242,26 @@ CREATE DATABASE FREE
   UNDO TABLESPACE undotbs1 DATAFILE '/opt/oracle/oradata/FREE/undotbs01.dbf' SIZE 200M REUSE AUTOEXTEND ON NEXT 5M MAXSIZE UNLIMITED
   ENABLE PLUGGABLE DATABASE;
 
--- Run catalog scripts to create data dictionary
-@?/rdbms/admin/catalog.sql
-@?/rdbms/admin/catproc.sql
-
--- Create SPFILE for automatic startup
-CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
-
--- Show database status
-SELECT instance_name, status FROM v$instance;
-SELECT name, open_mode FROM v$database;
+-- Open the database
+ALTER DATABASE OPEN;
 
 EXIT;
 SQLEOF
 
-# Create pluggable database FREEPDB1
-echo "[INFO] Creating pluggable database FREEPDB1..."
+# Run catalog scripts to build data dictionary (takes 5-10 minutes)
+echo "[INFO] Running catalog scripts to build data dictionary (this takes 5-10 minutes)..."
 $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+@?/rdbms/admin/catalog.sql
+@?/rdbms/admin/catproc.sql
+EXIT;
+SQLEOF
+
+# Create SPFILE and PDB
+echo "[INFO] Creating SPFILE and pluggable database FREEPDB1..."
+$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+-- Create SPFILE for automatic startup
+CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
+
 -- Create PDB
 CREATE PLUGGABLE DATABASE FREEPDB1
   ADMIN USER pdbadmin IDENTIFIED BY "Cr0ckr0@ch#2026"
@@ -268,7 +271,9 @@ CREATE PLUGGABLE DATABASE FREEPDB1
 ALTER PLUGGABLE DATABASE ALL OPEN;
 ALTER PLUGGABLE DATABASE ALL SAVE STATE;
 
--- Show PDB status
+-- Show status
+SELECT instance_name, status FROM v$instance;
+SELECT name, open_mode FROM v$database;
 SELECT name, open_mode FROM v$pdbs;
 
 EXIT;
