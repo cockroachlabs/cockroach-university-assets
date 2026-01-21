@@ -113,11 +113,11 @@ fi
 ## CONFIGURE ORACLE DATABASE USING OFFICIAL SCRIPT
 echo "[INFO] Configuring Oracle Database using official configuration script..."
 
-# Set password in configuration file
-echo "ORACLE_PASSWORD=Cr0ckr0@ch#2026" | sudo tee -a /etc/sysconfig/oracle-free-26ai.conf
+# Set password in configuration file (using simple password to avoid special character issues)
+echo "ORACLE_PASSWORD=CockroachDB123" | sudo tee -a /etc/sysconfig/oracle-free-26ai.conf
 
 # Run Oracle's official configuration script (password is read from config file)
-echo "Cr0ckr0@ch#2026" | sudo /etc/init.d/oracle-free-26ai configure
+echo "CockroachDB123" | sudo /etc/init.d/oracle-free-26ai configure
 
 echo "[INFO] ✅ Database configured"
 
@@ -172,9 +172,9 @@ echo "[INFO] ✅ Oracle AI Database 26ai Free Installation Complete!"
 echo "[INFO] ============================================"
 echo "[INFO] Database: FREE"
 echo "[INFO] PDB: FREEPDB1"
-echo "[INFO] SYS/SYSTEM password: Cr0ckr0@ch#2026"
+echo "[INFO] SYS/SYSTEM password: CockroachDB123"
 echo "[INFO] Listener: Running on port 1521"
-echo "[INFO] Auto-start: Enabled (systemd)"
+echo "[INFO] Auto-start: Enabled (Oracle service)"
 echo "[INFO] ============================================"
 echo "[INFO] Database files: /opt/oracle/oradata/FREE/"
 echo "[INFO] ============================================"

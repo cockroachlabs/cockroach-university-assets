@@ -72,7 +72,7 @@ In Instruqt:
 ✅ Database FREE created and running
 ✅ PDB FREEPDB1 created
 ✅ Auto-start configured (systemd service)
-✅ Password: `Cr0ckr0@ch#2026`
+✅ Password: `CockroachDB123`
 
 ---
 
@@ -135,8 +135,8 @@ done
 ## Credentials and Connection Info
 
 ### System Passwords (in host image)
-- **SYS**: `Cr0ckr0@ch#2026`
-- **SYSTEM**: `Cr0ckr0@ch#2026`
+- **SYS**: `CockroachDB123`
+- **SYSTEM**: `CockroachDB123`
 
 ### Application Users (created by oracle-setup-existing.sh)
 - **C##MIGRATION_USER**: `migpass`
@@ -146,7 +146,7 @@ done
 
 ```bash
 # Oracle CDB (as SYS)
-sqlplus sys/Cr0ckr0@ch#2026@localhost:1521/FREE as sysdba
+sqlplus sys/CockroachDB123@localhost:1521/FREE as sysdba
 
 # Oracle PDB (as APP_USER)
 sqlplus APP_USER/apppass@localhost:1521/FREEPDB1
