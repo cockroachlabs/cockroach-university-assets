@@ -48,20 +48,33 @@ docker run -d \
 echo "[INFO] Oracle container started, waiting for database to be ready..."
 
 ## WAIT FOR ORACLE TO BE READY
-MAX_WAIT=300  # 5 minutes
+MAX_WAIT=600  # 10 minutes (Oracle takes a while to fully start)
 COUNTER=0
-until docker exec oracle-source bash -c "echo 'SELECT 1 FROM DUAL;' | sqlplus -s sys/CockroachDB_123@//localhost:1521/FREE as sysdba" &>/dev/null; do
+
+echo "[INFO] Waiting for Oracle database to be OPEN (this may take 3-5 minutes)..."
+
+while [ $COUNTER -lt $MAX_WAIT ]; do
+    # Check if database status is OPEN
+    DB_STATUS=$(docker exec oracle-source bash -c "echo 'SET PAGESIZE 0 FEEDBACK OFF HEADING OFF
+SELECT status FROM v\$instance;
+EXIT;' | sqlplus -s / as sysdba 2>/dev/null" | grep -v '^$' | tail -1 | tr -d '[:space:]')
+
+    if [ "$DB_STATUS" = "OPEN" ]; then
+        echo "[INFO] ✅ Oracle database is OPEN and ready"
+        break
+    fi
+
     sleep 10
     COUNTER=$((COUNTER + 10))
-    if [ $COUNTER -ge $MAX_WAIT ]; then
-        echo "[ERROR] Oracle database failed to start within ${MAX_WAIT} seconds"
-        docker logs oracle-source
-        exit 1
-    fi
-    echo "[INFO] Waiting for Oracle... (${COUNTER}s elapsed)"
+    echo "[INFO] Waiting for Oracle database to open... (${COUNTER}s elapsed, status: ${DB_STATUS:-starting})"
 done
 
-echo "[INFO] ✅ Oracle database is ready"
+if [ $COUNTER -ge $MAX_WAIT ]; then
+    echo "[ERROR] Oracle database failed to open within ${MAX_WAIT} seconds"
+    echo "[ERROR] Last status: ${DB_STATUS:-unknown}"
+    docker logs oracle-source | tail -50
+    exit 1
+fi
 
 ## ENABLE ARCHIVELOG MODE (Required for CDC/Replicator)
 echo "[INFO] Enabling ARCHIVELOG mode..."
