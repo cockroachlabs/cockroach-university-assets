@@ -111,14 +111,27 @@ if [ ! -d "$ORACLE_USER_HOME" ]; then
 fi
 
 ## CONFIGURE ORACLE DATABASE USING OFFICIAL SCRIPT
-echo "[INFO] Configuring Oracle Database using official configuration script..."
+echo ""
+echo "[INFO] ============================================"
+echo "[INFO] Oracle Database Configuration"
+echo "[INFO] ============================================"
+echo "[INFO] You will be prompted to enter a password for database accounts."
+echo "[INFO] "
+echo "[INFO] IMPORTANT: Use this password: CockroachDB_123"
+echo "[INFO] "
+echo "[INFO] You'll need to enter it 3 times for:"
+echo "[INFO]   1. SYS user password"
+echo "[INFO]   2. SYSTEM user password"
+echo "[INFO]   3. PDBADMIN user password"
+echo "[INFO] "
+echo "[INFO] Configuration takes 5-15 minutes. Please be patient..."
+echo "[INFO] ============================================"
+echo ""
 
-# Set password in configuration file (using simple password to avoid special character issues)
-echo "ORACLE_PASSWORD=CockroachDB123" | sudo tee -a /etc/sysconfig/oracle-free-26ai.conf
+# Run Oracle's official configuration script (requires manual password entry)
+sudo /etc/init.d/oracle-free-26ai configure
 
-# Run Oracle's official configuration script (password is read from config file)
-echo "CockroachDB123" | sudo /etc/init.d/oracle-free-26ai configure
-
+echo ""
 echo "[INFO] ✅ Database configured"
 
 ## VERIFY DATABASE IS RUNNING
@@ -170,9 +183,9 @@ echo ""
 echo "[INFO] ============================================"
 echo "[INFO] ✅ Oracle AI Database 26ai Free Installation Complete!"
 echo "[INFO] ============================================"
-echo "[INFO] Database: FREE"
+echo "[INFO] Database: FREE (CDB)"
 echo "[INFO] PDB: FREEPDB1"
-echo "[INFO] SYS/SYSTEM password: CockroachDB123"
+echo "[INFO] SYS/SYSTEM/PDBADMIN password: CockroachDB_123"
 echo "[INFO] Listener: Running on port 1521"
 echo "[INFO] Auto-start: Enabled (Oracle service)"
 echo "[INFO] ============================================"
@@ -180,6 +193,8 @@ echo "[INFO] Database files: /opt/oracle/oradata/FREE/"
 echo "[INFO] ============================================"
 echo ""
 echo "[INFO] 🎯 Next Steps:"
-echo "[INFO] 1. Run verification: bash verify-oracle-hostimage.sh"
+echo "[INFO] 1. Download and run verification script:"
+echo "[INFO]    curl -fsSL https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/migration-labs/oracle/verify-oracle-hostimage.sh -o /tmp/verify.sh"
+echo "[INFO]    bash /tmp/verify.sh"
 echo "[INFO] 2. If all checks pass, SAVE this VM as your Instruqt host image"
 echo "[INFO] ============================================"

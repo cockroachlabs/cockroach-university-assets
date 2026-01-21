@@ -32,9 +32,25 @@ curl -fsSL https://raw.githubusercontent.com/cockroachlabs/cockroach-university-
 # Make it executable
 chmod +x /tmp/install-oracle.sh
 
-# Run it (takes ~20 minutes)
+# Run it (takes ~15-20 minutes)
 bash /tmp/install-oracle.sh
 ```
+
+**IMPORTANT:** During execution, you will be prompted to enter a password **3 times**:
+
+```
+Specify a password to be used for database accounts...
+Note that the same password will be used for SYS, SYSTEM and PDBADMIN accounts:
+```
+
+**Enter this password:** `CockroachDB_123`
+
+You'll need to enter it for:
+1. SYS user password
+2. SYSTEM user password
+3. PDBADMIN user password
+
+The configuration process takes **5-15 minutes** after you enter the passwords. Be patient and let it complete.
 
 ### Step 3: Verify Oracle Installation
 
@@ -69,10 +85,10 @@ In Instruqt:
 
 ✅ Oracle AI Database 26ai Free installed
 ✅ Listener configured on port 1521
-✅ Database FREE created and running
+✅ Database FREE (CDB) created and running
 ✅ PDB FREEPDB1 created
-✅ Auto-start configured (systemd service)
-✅ Password: `CockroachDB123`
+✅ Auto-start configured (Oracle service)
+✅ Password: `CockroachDB_123`
 
 ---
 
@@ -135,8 +151,9 @@ done
 ## Credentials and Connection Info
 
 ### System Passwords (in host image)
-- **SYS**: `CockroachDB123`
-- **SYSTEM**: `CockroachDB123`
+- **SYS**: `CockroachDB_123`
+- **SYSTEM**: `CockroachDB_123`
+- **PDBADMIN**: `CockroachDB_123`
 
 ### Application Users (created by oracle-setup-existing.sh)
 - **C##MIGRATION_USER**: `migpass`
@@ -146,7 +163,7 @@ done
 
 ```bash
 # Oracle CDB (as SYS)
-sqlplus sys/CockroachDB123@localhost:1521/FREE as sysdba
+sqlplus sys/CockroachDB_123@localhost:1521/FREE as sysdba
 
 # Oracle PDB (as APP_USER)
 sqlplus APP_USER/apppass@localhost:1521/FREEPDB1

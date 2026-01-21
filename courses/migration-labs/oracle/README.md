@@ -1,58 +1,93 @@
-# Oracle to CockroachDB Migration Lab
+# Oracle 26ai Host Image Setup
 
-This directory contains scripts and resources for Oracle to CockroachDB migration labs using **pre-configured host images**.
+This directory contains scripts to create an Instruqt host image with Oracle AI Database 26ai Free pre-installed.
 
-## Architecture
+## Quick Start for Developers
 
-### Host Image (One-time Setup)
-Your Instruqt host image has **Oracle AI Database 26ai Free pre-installed** with:
-- Oracle Database 26ai Free (CentOS/Rocky Linux based)
-- Listener configured on port 1521
-- Database: FREE
-- PDB: FREEPDB1
-- System passwords: OraclePass123
+### Creating the Host Image (One-time setup)
 
-### Track Runtime (Fast Setup)
-When learners start the track, only lightweight configuration is needed (~2-3 minutes):
-- Start Oracle if not running
-- Create migration schemas and users
-- Load sample data
-- Download MOLT tools and configurations
+1. **Start a fresh Instruqt VM** (CentOS Stream 9/10 or Rocky Linux 9, minimum 4GB RAM, 20GB disk)
 
-## Files
+2. **Run the installation script:**
 
-```
-oracle/
-├── oracle-setup-existing.sh    # Track setup script (use this in your track)
-├── sql-scripts/                # SQL scripts for schemas and data
-├── python-apps/                # Python workload generators
-└── molt-config/                # MOLT configuration files
+```bash
+curl -fsSL https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/migration-labs/oracle/install-oracle-hostimage.sh -o /tmp/install-oracle.sh
+
+chmod +x /tmp/install-oracle.sh
+
+bash /tmp/install-oracle.sh
 ```
 
-## Usage in Instruqt Track
+3. **⚠️ IMPORTANT: Enter password when prompted** (you'll be asked 3 times):
 
-### 1. Track Configuration
+```
+Password: CockroachDB_123
+```
 
-Specify your custom host image in the track config:
+Enter this same password for:
+- SYS user password
+- SYSTEM user password
+- PDBADMIN user password
+
+⏱️ **Wait 5-15 minutes** for Oracle to configure the database after entering passwords.
+
+4. **Verify the installation:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/migration-labs/oracle/verify-oracle-hostimage.sh -o /tmp/verify.sh
+
+bash /tmp/verify.sh
+```
+
+5. **Save the VM as Instruqt host image** if all checks pass ✅
+
+---
+
+## What Gets Installed in the Host Image
+
+- ✅ Oracle AI Database 26ai Free
+- ✅ Database: `FREE` (CDB - Container Database)
+- ✅ Pluggable Database: `FREEPDB1`
+- ✅ Listener on port `1521`
+- ✅ Auto-start service enabled
+- ✅ System passwords: `CockroachDB_123`
+
+---
+
+## Files in This Directory
+
+| File | Purpose |
+|------|---------|
+| `install-oracle-hostimage.sh` | **Creates Oracle host image** (requires manual password entry - one-time setup) |
+| `verify-oracle-hostimage.sh` | **Verifies** Oracle installation is complete and working |
+| `oracle-setup-existing.sh` | **Fast setup for tracks** using the host image (~2-3 min) |
+| `SETUP-GUIDE.md` | Detailed setup guide and documentation |
+| `README.md` | This file - quick reference |
+| `sql-scripts/` | SQL scripts for Oracle schemas and sample data |
+| `python-apps/` | Python workload generators |
+| `molt-config/` | MOLT Fetch/Verify/Replicator configurations |
+
+---
+
+## Using the Host Image in Tracks
+
+Once you have the host image saved, update your Instruqt track configuration:
 
 ```yaml
 version: "3"
 type: track
-slug: oracle-to-cockroachdb-migration
-title: Oracle to CockroachDB Migration
-
 containers:
 - name: oracle-migration
-  image: your-custom-oracle-image  # Your pre-configured host image
+  image: oracle-26ai-free-ready  # Your saved host image name
   ports:
   - 1521  # Oracle
   - 26257 # CockroachDB
   - 8080  # CockroachDB UI
 ```
 
-### 2. Setup Script
+### Track Setup Script
 
-In your track's setup script, reference the lightweight setup:
+In your track's setup script, use `oracle-setup-existing.sh` for fast configuration:
 
 ```bash
 SCRIPTS=(
@@ -60,7 +95,7 @@ SCRIPTS=(
     "base-redhat/cockroachdb.sh"
     "base-redhat/cockroachdb-start.sh"
     "courses/migration-labs/molt.sh"
-    "courses/migration-labs/oracle/oracle-setup-existing.sh"  # ← Uses pre-installed Oracle
+    "courses/migration-labs/oracle/oracle-setup-existing.sh"  # ← Fast setup using pre-installed Oracle
 )
 
 BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/"
@@ -73,107 +108,154 @@ for SCRIPT_PATH in "${SCRIPTS[@]}"; do
 done
 ```
 
-## What oracle-setup-existing.sh Does
+### What oracle-setup-existing.sh Does
 
-1. **Verifies Oracle is running** - Starts it if needed
-2. **Enables ARCHIVELOG mode** - Required for CDC/Replicator
-3. **Creates migration user** - C##MIGRATION_USER with necessary privileges
-4. **Installs Python dependencies** - cx_Oracle, oracledb
-5. **Downloads resources** - SQL scripts, Python apps, MOLT configs
-6. **Creates schemas** - Oracle source schema and CockroachDB target schema
-7. **Creates helper scripts** - Connection scripts for easy access
+1. ✅ Verifies Oracle is running (starts if needed)
+2. ✅ Enables ARCHIVELOG mode for CDC support
+3. ✅ Creates `C##MIGRATION_USER` with LogMiner privileges
+4. ✅ Installs Python dependencies (cx_Oracle, oracledb)
+5. ✅ Downloads SQL scripts, Python apps, and MOLT configs
+6. ✅ Creates Oracle source schema with sample data
+7. ✅ Creates CockroachDB target schema
+8. ✅ Creates connection helper scripts
 
-## Performance
+**Time**: ~2-3 minutes (vs 25-45 minutes without host image!)
 
-### Without Host Image (Ubuntu + alien conversion)
-- Download Oracle RPM: ~5-10 min
-- Convert RPM to DEB: ~10-20 min
-- Install and configure: ~5-10 min
-- **Total: ~25-45 minutes** ⏱️
-
-### With Host Image (RedHat + pre-installed Oracle)
-- Start Oracle: ~30 seconds
-- Configure schemas: ~1-2 minutes
-- **Total: ~2-3 minutes** ✨
-
-**Time saved per learner: ~20-40 minutes!**
+---
 
 ## Connection Information
 
-After setup completes, learners can connect to:
+### System Accounts (in host image)
+- **SYS**: `CockroachDB_123`
+- **SYSTEM**: `CockroachDB_123`
+- **PDBADMIN**: `CockroachDB_123`
 
-### Oracle Connections
+### Application Users (created by oracle-setup-existing.sh)
+- **C##MIGRATION_USER**: `migpass` (for CDC/LogMiner)
+- **APP_USER**: `apppass` (application schema)
+
+### Connection Examples
+
 ```bash
-# Connect as APP_USER (application schema)
-/root/oracle/connect_oracle_app.sh
+# Connect to CDB as SYS
+sqlplus sys/CockroachDB_123@localhost:1521/FREE as sysdba
+
+# Connect to PDB as APP_USER
+sqlplus APP_USER/apppass@localhost:1521/FREEPDB1
 
 # Connect as migration user
-/root/oracle/connect_oracle_migration.sh
+sqlplus 'C##MIGRATION_USER/migpass@localhost:1521/FREE'
 
-# Or connect directly
-sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
+# Use helper scripts
+/root/oracle/connect_oracle_app.sh        # APP_USER connection
+/root/oracle/connect_oracle_migration.sh  # MIGRATION_USER connection
+/root/oracle/connect_crdb.sh              # CockroachDB connection
 ```
 
-### CockroachDB Connection
-```bash
-# Connect to CockroachDB
-/root/oracle/connect_crdb.sh
+---
 
-# Or connect directly
-cockroach sql --insecure -d target
-```
+## Performance Comparison
 
-## Migration Resources
+| Method | Setup Time | Notes |
+|--------|------------|-------|
+| **Without host image** | 25-45 min | Downloads Oracle, converts RPM to DEB with alien |
+| **With host image** | 2-3 min | Oracle pre-installed, just configure schemas |
+| **Time saved** | ~20-40 min | **Per learner!** |
 
-### SQL Scripts (`sql-scripts/`)
-- `oracle_source_schema.sql` - Creates Oracle source schema
-- `oracle_source_data.sql` - Loads sample data into Oracle
-- `crdb_target_schema.sql` - Creates CockroachDB target schema
-- `verification_queries.sql` - Queries to verify migration
+---
 
-### Python Apps (`python-apps/`)
-- `oracle-workload.py` - Generates workload on Oracle
-- `cockroach-workload.py` - Generates workload on CockroachDB
-- `requirements.txt` - Python dependencies
+## Important Notes
 
-### MOLT Configs (`molt-config/`)
-- `transforms.json` - Schema transformation rules
-- `molt_fetch.sh` - MOLT Fetch wrapper script
-- `molt_verify.sh` - MOLT Verify wrapper script
-- `start_replicator.sh` - MOLT Replicator wrapper script
+### Why Manual Password Entry?
+
+Oracle's official configuration script (`/etc/init.d/oracle-free-26ai configure`) requires interactive password entry and doesn't support automation easily. This is a **one-time setup** when creating the host image - learners using the host image won't need to enter passwords.
+
+### Password Requirements
+
+The password `CockroachDB_123` meets Oracle's complexity requirements:
+- ✅ At least 8 characters
+- ✅ Contains uppercase letters (C, D, B)
+- ✅ Contains lowercase letters (ockroach)
+- ✅ Contains digits (123)
+- ✅ Contains special character (underscore _)
+
+---
 
 ## Troubleshooting
 
-### Oracle not starting
-```bash
-# Check Oracle processes
-ps aux | grep ora_
+### Oracle not starting in track
 
-# Start Oracle manually
-sudo -u oracle bash -c "
-  export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
-  export ORACLE_SID=FREE
-  export PATH=\$ORACLE_HOME/bin:\$PATH
-  lsnrctl start
-  echo 'STARTUP;' | sqlplus / as sysdba
-"
+```bash
+# Check service status
+systemctl status oracle-free-26ai
+
+# Start manually if needed
+sudo systemctl start oracle-free-26ai
+
+# Check processes
+pgrep -f ora_pmon_FREE && echo "✅ Running" || echo "❌ Not running"
 ```
 
 ### Check database status
+
 ```bash
 sudo -u oracle bash -c "
   export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
   export ORACLE_SID=FREE
   export PATH=\$ORACLE_HOME/bin:\$PATH
-  echo 'SELECT status FROM v\$instance;' | sqlplus -s / as sysdba
+  echo 'SELECT instance_name, status FROM v\$instance;' | sqlplus -s / as sysdba
 "
 ```
 
-## Building the Host Image
+### View Oracle logs
 
-If you need to rebuild the host image, see the separate documentation in `base-redhat/README.md` for the full installation process.
+```bash
+# Alert log
+tail -100 /opt/oracle/diag/rdbms/free/FREE/trace/alert_FREE.log
 
-The key script used during host image creation was `/tmp/oracle-configure-headless.sh` which:
-1. Configured the listener manually (headless mode)
-2. Created the database using DBCA in silent mode
-3. Set system passwords to OraclePass123
+# Listener log
+tail -100 /opt/oracle/diag/tnslsnr/*/listener/trace/listener.log
+```
+
+---
+
+## Migration Resources
+
+All resources are downloaded to `/root/oracle/` by `oracle-setup-existing.sh`:
+
+### SQL Scripts (`/root/oracle/sql-scripts/`)
+- `oracle_source_schema.sql` - Creates Oracle source schema (APP_USER)
+- `oracle_source_data.sql` - Loads sample data into Oracle
+- `crdb_target_schema.sql` - Creates CockroachDB target schema
+- `verification_queries.sql` - Queries to verify migration success
+
+### Python Apps (`/root/oracle/python-apps/`)
+- `oracle-workload.py` - Generates workload on Oracle source
+- `cockroach-workload.py` - Generates workload on CockroachDB target
+- `requirements.txt` - Python dependencies
+
+### MOLT Configs (`/root/oracle/molt-config/`)
+- `transforms.json` - Schema transformation rules for MOLT Fetch
+- `molt_fetch.sh` - MOLT Fetch wrapper script
+- `molt_verify.sh` - MOLT Verify wrapper script
+- `start_replicator.sh` - MOLT Replicator wrapper script for CDC
+
+---
+
+## Additional Documentation
+
+See [SETUP-GUIDE.md](./SETUP-GUIDE.md) for comprehensive documentation including:
+- Detailed step-by-step instructions
+- Two-phase architecture explanation (host image vs runtime setup)
+- Advanced troubleshooting
+- File structure details
+
+---
+
+## Support
+
+For issues or questions:
+1. Check the [SETUP-GUIDE.md](./SETUP-GUIDE.md) troubleshooting section
+2. Review Oracle logs (see Troubleshooting above)
+3. Verify all host image checks pass with `verify-oracle-hostimage.sh`
+4. Contact the CockroachDB Education team

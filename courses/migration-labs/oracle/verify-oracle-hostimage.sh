@@ -130,10 +130,10 @@ SYS_LOGIN=$(sudo -u oracle bash -c "
     export ORACLE_SID=$ORACLE_SID
     export PATH=\$ORACLE_HOME/bin:\$PATH
     export LD_LIBRARY_PATH=\$ORACLE_HOME/lib
-    echo 'EXIT;' | \$ORACLE_HOME/bin/sqlplus -s sys/'CockroachDB123'@localhost:1521/FREE as sysdba 2>&1 | grep -c 'Connected to'
+    echo 'EXIT;' | \$ORACLE_HOME/bin/sqlplus -s sys/'CockroachDB_123'@localhost:1521/FREE as sysdba 2>&1 | grep -c 'Connected to'
 ")
 
-check "SYS password works (CockroachDB123)" "[ '$SYS_LOGIN' -gt 0 ]"
+check "SYS password works (CockroachDB_123)" "[ '$SYS_LOGIN' -gt 0 ]"
 echo ""
 
 echo "7. Auto-start Configuration"
@@ -153,10 +153,10 @@ if [ $FAIL -eq 0 ]; then
     echo "✅ ALL CHECKS PASSED!"
     echo ""
     echo "Your Oracle host image is ready:"
-    echo "  • Database: FREE"
+    echo "  • Database: FREE (CDB)"
     echo "  • PDB: FREEPDB1"
     echo "  • Port: 1521"
-    echo "  • Password: CockroachDB123"
+    echo "  • Password: CockroachDB_123"
     echo "  • Auto-start: Enabled"
     echo ""
     echo "🎉 You can now SAVE this VM as your Instruqt host image!"
