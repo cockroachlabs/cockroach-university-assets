@@ -114,10 +114,10 @@ fi
 echo "[INFO] Configuring Oracle Database using official configuration script..."
 
 # Set password in configuration file
-sudo sed -i 's/^ORACLE_PASSWORD=.*/ORACLE_PASSWORD=Cr0ckr0@ch#2026/' /etc/sysconfig/oracle-free-26ai.conf || true
+echo "ORACLE_PASSWORD=Cr0ckr0@ch#2026" | sudo tee -a /etc/sysconfig/oracle-free-26ai.conf
 
-# Run Oracle's official configuration script
-sudo /etc/init.d/oracle-free-26ai configure
+# Run Oracle's official configuration script (password is read from config file)
+echo "Cr0ckr0@ch#2026" | sudo /etc/init.d/oracle-free-26ai configure
 
 echo "[INFO] ✅ Database configured"
 
