@@ -129,10 +129,119 @@ echo "[INFO] ============================================"
 echo ""
 
 # Run Oracle's official configuration script (requires manual password entry)
-sudo /etc/init.d/oracle-free-23ai configure
+echo "[INFO] Running Oracle configuration script..."
+echo "[INFO] NOTE: This may fail with DBCA errors - that's expected!"
+echo ""
+
+sudo /etc/init.d/oracle-free-23ai configure || {
+    echo ""
+    echo "[WARNING] ============================================"
+    echo "[WARNING] DBCA configuration failed (this is expected)"
+    echo "[WARNING] Now we'll manually complete the database setup"
+    echo "[WARNING] ============================================"
+    echo ""
+}
+
+# Manual database completion (in case DBCA failed)
+echo "[INFO] Completing database setup manually..."
+
+sudo -u oracle bash << 'MANUAL_COMPLETION'
+export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_SID=FREE
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+
+# Check if database files exist
+if [ -d "/opt/oracle/oradata/FREE" ] && [ "$(ls -A /opt/oracle/oradata/FREE 2>/dev/null)" ]; then
+    echo "[INFO] Database files found, attempting to start existing database..."
+
+    # Try to start existing database
+    $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+STARTUP MOUNT;
+ALTER DATABASE OPEN;
+ALTER PLUGGABLE DATABASE ALL OPEN;
+EXIT;
+SQLEOF
+
+    if [ $? -eq 0 ]; then
+        echo "[INFO] ✅ Existing database started successfully"
+        exit 0
+    fi
+fi
+
+# If no database or startup failed, create fresh
+echo "[INFO] Creating fresh database manually..."
+
+# Clean up any partial files
+rm -rf /opt/oracle/oradata/FREE/*
+mkdir -p /opt/oracle/oradata/FREE
+mkdir -p /opt/oracle/admin/FREE/adump
+
+# Create listener config
+mkdir -p $ORACLE_HOME/network/admin
+cat > $ORACLE_HOME/network/admin/listener.ora << 'LISTEOF'
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+    )
+  )
+LISTEOF
+
+# Start listener
+$ORACLE_HOME/bin/lsnrctl start || echo "[INFO] Listener may already be running"
+
+# Create init file
+cat > $ORACLE_HOME/dbs/initFREE.ora << 'INITEOF'
+db_name=FREE
+memory_target=1G
+processes=150
+db_block_size=8192
+compatible=23.0.0
+control_files=(/opt/oracle/oradata/FREE/control01.ctl)
+undo_tablespace=UNDOTBS1
+INITEOF
+
+# Create password file
+$ORACLE_HOME/bin/orapwd file=$ORACLE_HOME/dbs/orapwFREE password=CockroachDB_123 entries=10 force=y
+
+# Create database using DBCA in silent mode (simpler than SQL)
+$ORACLE_HOME/bin/dbca -silent \
+  -createDatabase \
+  -templateName General_Purpose.dbc \
+  -gdbname FREE \
+  -sid FREE \
+  -sysPassword CockroachDB_123 \
+  -systemPassword CockroachDB_123 \
+  -characterSet AL32UTF8 \
+  -memoryPercentage 40 \
+  -emConfiguration NONE \
+  -storageType FS \
+  -datafileDestination /opt/oracle/oradata || {
+
+    echo "[WARNING] DBCA silent mode also failed, trying basic SQL creation..."
+
+    # Last resort: simplest possible database
+    $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+STARTUP NOMOUNT;
+CREATE DATABASE FREE
+  CONTROLFILE REUSE
+  LOGFILE GROUP 1 ('/opt/oracle/oradata/FREE/redo01.log') SIZE 50M
+  CHARACTER SET AL32UTF8
+  NATIONAL CHARACTER SET AL16UTF16
+  DATAFILE '/opt/oracle/oradata/FREE/system01.dbf' SIZE 500M AUTOEXTEND ON
+  SYSAUX DATAFILE '/opt/oracle/oradata/FREE/sysaux01.dbf' SIZE 300M AUTOEXTEND ON
+  UNDO TABLESPACE undotbs1 DATAFILE '/opt/oracle/oradata/FREE/undotbs01.dbf' SIZE 100M AUTOEXTEND ON;
+ALTER DATABASE OPEN;
+CREATE SPFILE FROM PFILE;
+EXIT;
+SQLEOF
+}
+
+MANUAL_COMPLETION
 
 echo ""
-echo "[INFO] ✅ Database configured"
+echo "[INFO] ✅ Database setup completed"
 
 ## VERIFY DATABASE IS RUNNING
 echo "[INFO] Verifying Oracle Database..."

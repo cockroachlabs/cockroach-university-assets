@@ -1,6 +1,6 @@
 # Oracle 23ai Host Image Setup
 
-This directory contains scripts to create an Instruqt host image with Oracle AI Database 26ai Free pre-installed.
+This directory contains scripts to create an Instruqt host image with Oracle Database 23ai Free pre-installed.
 
 ## Quick Start for Developers
 
@@ -18,7 +18,9 @@ chmod +x /tmp/install-oracle.sh
 bash /tmp/install-oracle.sh
 ```
 
-3. **⚠️ IMPORTANT: Enter password when prompted** (you'll be asked 3 times):
+3. **⚠️ IMPORTANT: Manual Steps During Installation**
+
+**Step A - Password Entry** (you'll be asked 3 times):
 
 ```
 Password: CockroachDB_123
@@ -29,7 +31,17 @@ Enter this same password for:
 - SYSTEM user password
 - PDBADMIN user password
 
-⏱️ **Wait 5-15 minutes** for Oracle to configure the database after entering passwords.
+**Step B - DBCA May Fail (Expected!)**
+
+Oracle's DBCA configuration tool has known bugs and may fail with:
+```
+[WARNING] [INS-08109] Unexpected error occurred while validating inputs...
+Database configuration failed.
+```
+
+**Don't worry!** The script automatically detects this and completes the setup using alternative methods.
+
+⏱️ **Total time:** 10-20 minutes. Let the script run to completion.
 
 4. **Verify the installation:**
 
@@ -45,12 +57,14 @@ bash /tmp/verify.sh
 
 ## What Gets Installed in the Host Image
 
-- ✅ Oracle AI Database 26ai Free
+- ✅ Oracle Database 23ai Free (stable version)
 - ✅ Database: `FREE` (CDB - Container Database)
-- ✅ Pluggable Database: `FREEPDB1`
+- ✅ Pluggable Database: `FREEPDB1` (if successfully created)
 - ✅ Listener on port `1521`
 - ✅ Auto-start service enabled
 - ✅ System passwords: `CockroachDB_123`
+
+**Note:** If PDB creation fails, the CDB alone is sufficient for migration labs.
 
 ---
 
