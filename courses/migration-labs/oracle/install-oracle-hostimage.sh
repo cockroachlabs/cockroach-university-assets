@@ -261,16 +261,21 @@ $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 EXIT;
 SQLEOF
 
-# Reconnect and ensure database is open, then create PDB
-echo "[INFO] Creating SPFILE and pluggable database FREEPDB1..."
+# Restart database cleanly and create PDB
+echo "[INFO] Restarting database and creating SPFILE..."
 $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
--- Ensure database is open (might have closed after catalog scripts)
-ALTER DATABASE MOUNT;
-ALTER DATABASE OPEN;
+-- Clean restart using PFILE
+SHUTDOWN IMMEDIATE;
+STARTUP PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
 
 -- Create SPFILE for automatic startup
 CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
 
+EXIT;
+SQLEOF
+
+echo "[INFO] Creating pluggable database FREEPDB1..."
+$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 -- Create PDB
 CREATE PLUGGABLE DATABASE FREEPDB1
   ADMIN USER pdbadmin IDENTIFIED BY "Cr0ckr0@ch#2026"
