@@ -214,8 +214,8 @@ INITEOF
 echo "[INFO] Creating password file..."
 $ORACLE_HOME/bin/orapwd file=$ORACLE_HOME/dbs/orapwFREE password='Cr0ckr0@ch#2026' entries=10
 
-# Create database using SQL
-echo "[INFO] Creating database (this takes several minutes)..."
+# Create database and run all scripts in one session
+echo "[INFO] Creating database and building data dictionary (this takes 10-15 minutes)..."
 $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 -- Start instance in NOMOUNT mode
 STARTUP NOMOUNT PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
@@ -245,20 +245,10 @@ CREATE DATABASE FREE
 -- Open the database
 ALTER DATABASE OPEN;
 
-EXIT;
-SQLEOF
-
-# Run catalog scripts to build data dictionary (takes 5-10 minutes)
-echo "[INFO] Running catalog scripts to build data dictionary (this takes 5-10 minutes)..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+-- Run catalog scripts in the same session
 @?/rdbms/admin/catalog.sql
 @?/rdbms/admin/catproc.sql
-EXIT;
-SQLEOF
 
-# Create SPFILE and PDB
-echo "[INFO] Creating SPFILE and pluggable database FREEPDB1..."
-$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 -- Create SPFILE for automatic startup
 CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
 
@@ -271,7 +261,7 @@ CREATE PLUGGABLE DATABASE FREEPDB1
 ALTER PLUGGABLE DATABASE ALL OPEN;
 ALTER PLUGGABLE DATABASE ALL SAVE STATE;
 
--- Show status
+-- Show final status
 SELECT instance_name, status FROM v$instance;
 SELECT name, open_mode FROM v$database;
 SELECT name, open_mode FROM v$pdbs;
