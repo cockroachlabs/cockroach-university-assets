@@ -2,49 +2,67 @@
 set -euxo pipefail
 
 echo "[INFO] ============================================"
-echo "[INFO] Installing and configuring Oracle Database 23ai Free"
+echo "[INFO] Oracle Migration Lab Setup (Using Pre-configured Host Image)"
 echo "[INFO] ============================================"
 
-## PREREQUISITES
-export DEBIAN_FRONTEND=noninteractive
-
-## INSTALL ORACLE 23ai FREE
-echo "[INFO] Installing Oracle Database 23ai Free..."
-
-# Download Oracle Database 23ai Free .deb package
-cd /tmp
-wget -q https://download.oracle.com/otn-pub/otn_software/db-free/oracle-database-free-23ai_1.0-1_amd64.deb
-
-# Install dependencies
-sudo apt-get update
-sudo apt-get install -y alien libaio1 unixodbc
-
-# Install Oracle
-sudo dpkg -i oracle-database-free-23ai_1.0-1_amd64.deb || true
-sudo apt-get install -f -y
-
-# Configure Oracle
-echo "[INFO] Configuring Oracle Database..."
-sudo /etc/init.d/oracle-free-23ai configure
+## This script assumes Oracle AI Database 26ai is already installed in the host image
+## It configures schemas, users, and downloads resources for the migration lab
 
 # Set environment variables
-cat >> ~/.bashrc << 'EOF'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
+
+# Also set for current user
+if ! grep -q "ORACLE_HOME" ~/.bashrc 2>/dev/null; then
+    cat >> ~/.bashrc << 'EOF'
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_SID=FREE
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
 EOF
+fi
 
-source ~/.bashrc
+source ~/.bashrc || true
 
-# Wait for database to be ready
-echo "[INFO] Waiting for Oracle database to be ready..."
-sleep 30
+# Verify Oracle is installed
+if [ ! -f "$ORACLE_HOME/bin/sqlplus" ]; then
+    echo "[ERROR] Oracle is not installed at $ORACLE_HOME"
+    echo "[ERROR] This script requires a host image with Oracle pre-installed"
+    exit 1
+fi
+
+# Check if database is running
+echo "[INFO] Checking Oracle Database status..."
+if ! pgrep -f "ora_pmon_FREE" > /dev/null; then
+    echo "[INFO] Starting Oracle Database..."
+    sudo systemctl start oracle-free.service || {
+        # Fallback to manual start
+        sudo -u oracle bash << 'EOF'
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
+export ORACLE_SID=FREE
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:${LD_LIBRARY_PATH:-}
+$ORACLE_HOME/bin/lsnrctl start
+$ORACLE_HOME/bin/dbstart $ORACLE_HOME
+EOF
+    }
+    sleep 15
+fi
+
+# Verify database is now running
+if ! pgrep -f "ora_pmon_FREE" > /dev/null; then
+    echo "[ERROR] Oracle Database failed to start"
+    exit 1
+fi
+
+echo "[INFO] ✅ Oracle Database is running"
 
 ## ENABLE ARCHIVELOG MODE (Required for CDC/Replicator)
 echo "[INFO] Enabling ARCHIVELOG mode for CDC support..."
 sudo su - oracle << 'ORACLE_SETUP'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -62,7 +80,7 @@ ORACLE_SETUP
 ## CREATE MIGRATION USER (Common user for CDB and PDB)
 echo "[INFO] Creating migration user C##MIGRATION_USER..."
 sudo su - oracle << 'ORACLE_USER'
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -93,10 +111,16 @@ EXIT;
 EOF
 ORACLE_USER
 
-## INSTALL PYTHON ORACLE DEPENDENCIES
+## INSTALL PYTHON ORACLE DEPENDENCIES (if not already installed)
 echo "[INFO] Installing Python Oracle dependencies..."
-sudo apt-get install -y python3-pip python3-venv
-pip3 install cx_Oracle oracledb --break-system-packages
+if command -v dnf &> /dev/null; then
+    PKG_MGR="dnf"
+else
+    PKG_MGR="yum"
+fi
+
+sudo ${PKG_MGR} install -y python3-pip python3-devel gcc || true
+pip3 install cx_Oracle oracledb --user || echo "[WARNING] Python packages may already be installed"
 
 ## DOWNLOAD SQL SCRIPTS, PYTHON APPS, AND MOLT CONFIGS
 echo "[INFO] Downloading Oracle migration resources from GitHub..."
@@ -134,7 +158,7 @@ chmod +x ${ORACLE_DIR}/python-apps/*.py
 ## EXECUTE ORACLE SOURCE SCHEMA CREATION
 echo "[INFO] Creating Oracle source schema..."
 sudo su - oracle << ORACLE_SCHEMA
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 
@@ -142,9 +166,14 @@ sqlplus / as sysdba @${ORACLE_DIR}/sql-scripts/oracle_source_schema.sql
 sqlplus / as sysdba @${ORACLE_DIR}/sql-scripts/oracle_source_data.sql
 ORACLE_SCHEMA
 
-## CREATE CRDB TARGET SCHEMA
-echo "[INFO] Creating CockroachDB target schema..."
-cockroach sql --insecure < ${ORACLE_DIR}/sql-scripts/crdb_target_schema.sql
+## CREATE CRDB TARGET SCHEMA (only if CockroachDB is running)
+if command -v cockroach &> /dev/null && pgrep -f cockroach > /dev/null; then
+    echo "[INFO] Creating CockroachDB target schema..."
+    cockroach sql --insecure < ${ORACLE_DIR}/sql-scripts/crdb_target_schema.sql
+else
+    echo "[INFO] CockroachDB not running yet, skipping target schema creation"
+    echo "[INFO] You can run this later: cockroach sql --insecure < ${ORACLE_DIR}/sql-scripts/crdb_target_schema.sql"
+fi
 
 ## SETUP CONNECTION SCRIPTS
 echo "[INFO] Creating connection helper scripts..."
@@ -152,7 +181,7 @@ echo "[INFO] Creating connection helper scripts..."
 # Oracle connection script for APP_USER
 cat > /root/oracle/connect_oracle_app.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 sqlplus APP_USER/apppass@//localhost:1521/FREEPDB1
@@ -162,7 +191,7 @@ chmod +x /root/oracle/connect_oracle_app.sh
 # Oracle connection script for MIGRATION_USER
 cat > /root/oracle/connect_oracle_migration.sh << 'EOF'
 #!/bin/bash
-export ORACLE_HOME=/opt/oracle/product/23ai/dbhomeFree
+export ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree
 export ORACLE_SID=FREE
 export PATH=$ORACLE_HOME/bin:$PATH
 sqlplus 'C##MIGRATION_USER/migpass@//localhost:1521/FREE'
@@ -177,7 +206,7 @@ EOF
 chmod +x /root/oracle/connect_crdb.sh
 
 echo "[INFO] ============================================"
-echo "[INFO] Oracle Database 23ai Free setup complete!"
+echo "[INFO] Oracle AI Database 26ai configuration complete!"
 echo "[INFO] ============================================"
 echo "[INFO] Oracle resources available at: ${ORACLE_DIR}"
 echo "[INFO] Connection scripts:"
