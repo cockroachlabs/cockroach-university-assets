@@ -17,33 +17,63 @@ echo "[INFO] Using package manager: ${PKG_MGR}"
 
 ## INSTALL DEPENDENCIES
 echo "[INFO] Installing dependencies..."
+
+# Core dependencies that must succeed
 sudo ${PKG_MGR} install -y \
     libaio \
-    unixODBC \
     bc \
     binutils \
-    compat-libcap1 \
     glibc \
     glibc-devel \
-    ksh \
     libgcc \
     libstdc++ \
     libstdc++-devel \
-    make \
+    make || {
+    echo "[ERROR] Failed to install core dependencies"
+    exit 1
+}
+
+# Optional dependencies (may not exist in all versions)
+sudo ${PKG_MGR} install -y \
+    unixODBC \
+    ksh \
     sysstat \
     numactl-libs \
-    smartmontools || echo "[WARNING] Some packages may not be available"
+    smartmontools \
+    compat-libcap1 2>/dev/null || echo "[WARNING] Some optional packages not available"
+
+# Verify libaio is actually installed
+if [ ! -f /usr/lib64/libaio.so.1 ]; then
+    echo "[ERROR] libaio.so.1 not found - this is required for Oracle"
+    echo "[ERROR] Trying alternative installation..."
+    sudo ${PKG_MGR} install -y libaio libaio-devel || {
+        echo "[ERROR] Cannot install libaio"
+        exit 1
+    }
+fi
+
+echo "[INFO] ✅ Core dependencies installed"
+ls -la /usr/lib64/libaio.so* 2>/dev/null || echo "[WARNING] libaio location may vary"
 
 ## DOWNLOAD ORACLE RPM
 cd /tmp
 ORACLE_RPM="oracle-ai-database-free-26ai-23.26.0-1.el8.x86_64.rpm"
 ORACLE_RPM_URL="https://download.oracle.com/otn-pub/otn_software/db-free/${ORACLE_RPM}"
 
+# Ensure curl is available
+if ! command -v curl &> /dev/null; then
+    sudo ${PKG_MGR} install -y curl
+fi
+
 if [ ! -f "${ORACLE_RPM}" ]; then
     echo "[INFO] Downloading Oracle 26ai RPM (~1.4GB)..."
-    wget --progress=dot:giga --timeout=600 --tries=3 "${ORACLE_RPM_URL}" || {
+    if command -v wget &> /dev/null; then
+        wget --progress=dot:giga --timeout=600 --tries=3 "${ORACLE_RPM_URL}" || {
+            curl -# -L -o "${ORACLE_RPM}" "${ORACLE_RPM_URL}"
+        }
+    else
         curl -# -L -o "${ORACLE_RPM}" "${ORACLE_RPM_URL}"
-    }
+    fi
 fi
 
 ## INSTALL ORACLE
