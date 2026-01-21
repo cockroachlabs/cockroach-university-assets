@@ -214,8 +214,8 @@ INITEOF
 echo "[INFO] Creating password file..."
 $ORACLE_HOME/bin/orapwd file=$ORACLE_HOME/dbs/orapwFREE password='Cr0ckr0@ch#2026' entries=10
 
-# Create database and run all scripts in one session
-echo "[INFO] Creating database and building data dictionary (this takes 10-15 minutes)..."
+# Create database
+echo "[INFO] Creating database..."
 $ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 -- Start instance in NOMOUNT mode
 STARTUP NOMOUNT PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
@@ -245,9 +245,28 @@ CREATE DATABASE FREE
 -- Open the database
 ALTER DATABASE OPEN;
 
--- Run catalog scripts in the same session
+EXIT;
+SQLEOF
+
+# Run catalog scripts (takes 5-10 minutes, will disconnect at end - this is normal)
+echo "[INFO] Building data dictionary (catalog.sql - takes ~5 minutes)..."
+$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 @?/rdbms/admin/catalog.sql
+EXIT;
+SQLEOF
+
+echo "[INFO] Building PL/SQL packages (catproc.sql - takes ~5 minutes)..."
+$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
 @?/rdbms/admin/catproc.sql
+EXIT;
+SQLEOF
+
+# Reconnect and ensure database is open, then create PDB
+echo "[INFO] Creating SPFILE and pluggable database FREEPDB1..."
+$ORACLE_HOME/bin/sqlplus / as sysdba << 'SQLEOF'
+-- Ensure database is open (might have closed after catalog scripts)
+ALTER DATABASE MOUNT;
+ALTER DATABASE OPEN;
 
 -- Create SPFILE for automatic startup
 CREATE SPFILE FROM PFILE='/opt/oracle/product/26ai/dbhomeFree/dbs/initFREE.ora';
