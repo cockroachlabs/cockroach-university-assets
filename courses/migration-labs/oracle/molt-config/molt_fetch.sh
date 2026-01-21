@@ -23,7 +23,7 @@ molt fetch \
   --direct-copy \
   --schema-filter 'APP_USER' \
   --table-filter '.*' \
-  --table-exclusion-filter 'REPLICATOR_SENTINAL' \
+  --table-exclusion-filter 'replicator_sentinal' \
   --table-handling truncate-if-exists \
   --allow-tls-mode-disable \
   --transformations-file "${TRANSFORMS_FILE}" \

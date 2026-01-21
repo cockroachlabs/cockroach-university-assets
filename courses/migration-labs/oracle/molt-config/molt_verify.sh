@@ -21,7 +21,7 @@ molt verify \
   --case-sensitive=false \
   --schema-filter 'APP_USER' \
   --table-filter '.*' \
-  --table-exclusion-filter 'REPLICATOR_SENTINAL' \
+  --table-exclusion-filter 'replicator_sentinal' \
   --transformations-file "${TRANSFORMS_FILE}" \
   --allow-tls-mode-disable \
   --logging info
