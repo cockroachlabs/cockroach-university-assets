@@ -38,13 +38,16 @@ cockroach sql --insecure -e "CREATE DATABASE IF NOT EXISTS replicator_staging;"
 
 # Run Replicator with Oracle LogMiner
 replicator oraclelogminer \
-  --source "${SOURCE_ORACLE}" \
-  --source-cdb "${SOURCE_CDB}" \
-  --target "${TARGET_CRDB}" \
-  --staging "${STAGING_DB}" \
-  --scn "${SCN}" \
-  --allow-tls-mode-disable \
-  --logging info
+  --sourceConn "${SOURCE_CDB}" \
+  --sourcePDBConn "${SOURCE_ORACLE}" \
+  --sourceSchema APP_USER \
+  --targetConn "${TARGET_CRDB}" \
+  --targetSchema target.public \
+  --stagingConn "postgres://root@localhost:26257/defaultdb?sslmode=disable" \
+  --stagingSchema replicator_staging --stagingCreateSchema \
+  --backfillFromSCN "${SCN}" --scn "${SCN}" \
+  --parallelism 4 --targetMaxPoolSize 8 \
+  -v
 
 echo "========================================"
 echo "✅ Replicator started"
