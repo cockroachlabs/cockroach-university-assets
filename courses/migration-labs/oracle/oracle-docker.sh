@@ -77,19 +77,47 @@ if [ $COUNTER -ge $MAX_WAIT ]; then
 fi
 
 ## ENABLE ARCHIVELOG MODE (Required for CDC/Replicator)
-echo "[INFO] Enabling ARCHIVELOG mode..."
-docker exec oracle-source bash -c "sqlplus / as sysdba <<'SQLEOF'
+echo "[INFO] Checking ARCHIVELOG mode..."
+
+# Check if ARCHIVELOG is already enabled
+ARCHIVELOG_STATUS=$(docker exec oracle-source bash -c "sqlplus -s / as sysdba <<'EOF'
+SET PAGESIZE 0 FEEDBACK OFF HEADING OFF
+SELECT log_mode FROM v\$database;
+EXIT;
+EOF
+" | grep -v '^$' | tail -1 | tr -d '[:space:]')
+
+echo "[INFO] Current ARCHIVELOG status: ${ARCHIVELOG_STATUS}"
+
+if [ "$ARCHIVELOG_STATUS" != "ARCHIVELOG" ]; then
+    echo "[INFO] Enabling ARCHIVELOG mode..."
+
+    # Add a small delay to ensure database is fully ready
+    sleep 5
+
+    docker exec oracle-source bash -c "sqlplus / as sysdba <<'SQLEOF'
 SHUTDOWN IMMEDIATE;
 STARTUP MOUNT;
 ALTER DATABASE ARCHIVELOG;
 ALTER DATABASE OPEN;
+EXIT;
+SQLEOF
+"
+    echo "[INFO] ✅ ARCHIVELOG mode enabled"
+else
+    echo "[INFO] ✅ ARCHIVELOG already enabled, skipping"
+fi
+
+## ENABLE FORCE LOGGING AND GOLDENGATE REPLICATION
+echo "[INFO] Enabling FORCE LOGGING and GoldenGate replication..."
+docker exec oracle-source bash -c "sqlplus / as sysdba <<'SQLEOF' || true
 ALTER DATABASE FORCE LOGGING;
 ALTER SYSTEM SET enable_goldengate_replication=TRUE SCOPE=BOTH;
 EXIT;
 SQLEOF
 "
 
-echo "[INFO] ✅ ARCHIVELOG mode enabled"
+echo "[INFO] ✅ Force logging and GoldenGate replication enabled"
 
 ## ENABLE SUPPLEMENTAL LOGGING (Required for CDC)
 echo "[INFO] Enabling supplemental logging..."
