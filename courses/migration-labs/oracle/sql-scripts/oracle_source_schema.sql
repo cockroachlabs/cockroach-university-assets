@@ -85,6 +85,12 @@ AS
    WHERE f.order_id = o.order_id
      AND o.symbol = 'ORCL';
 
+-- Create replicator sentinel table (required for MOLT Replicator)
+CREATE TABLE APP_USER.replicator_sentinel (
+  keycol NUMBER PRIMARY KEY,
+  lastSCN NUMBER
+);
+
 -- Verify schema creation
 SELECT 'Schema created successfully' AS status FROM dual;
 
