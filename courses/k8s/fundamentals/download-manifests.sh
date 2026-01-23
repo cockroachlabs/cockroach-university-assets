@@ -5,7 +5,7 @@ echo "[INFO] ============================================"
 echo "[INFO] Downloading Kubernetes YAML Manifests"
 echo "[INFO] ============================================"
 
-BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/k8s/manifests"
+BASE_URL="https://raw.githubusercontent.com/cockroachlabs/cockroach-university-assets/refs/heads/main/courses/k8s/fundamentals/manifests"
 DEST_DIR="/root/k8s-labs/manifests"
 
 # Create manifest directories
