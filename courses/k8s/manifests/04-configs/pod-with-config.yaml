@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-config
+  labels:
+    app: webapp-configured
+spec:
+  containers:
+  - name: webapp
+    image: nginx:1.25-alpine
+    ports:
+    - containerPort: 80
+
+    # Environment variables from ConfigMap
+    env:
+    - name: LOG_LEVEL
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: LOG_LEVEL
+    - name: APP_MODE
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: APP_MODE
+
+    # Environment variables from Secret
+    - name: DB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: db-credentials
+          key: username
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-credentials
+          key: password
+
+    # Mount ConfigMap as volume
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config
+      readOnly: true
+
+  volumes:
+  - name: config-volume
+    configMap:
+      name: app-config

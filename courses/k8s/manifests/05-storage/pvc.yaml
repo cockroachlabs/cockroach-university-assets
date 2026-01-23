@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-pvc
+  labels:
+    app: storage-demo
+spec:
+  accessModes:
+    - ReadWriteOnce  # Must match PV access mode
+  resources:
+    requests:
+      storage: 1Gi   # Storage requested
+  storageClassName: manual  # Must match PV storageClassName
+  # This PVC will bind to the PV with matching storageClassName and sufficient capacity

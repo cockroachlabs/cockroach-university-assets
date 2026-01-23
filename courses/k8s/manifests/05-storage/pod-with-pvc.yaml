@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-pod
+  labels:
+    app: storage-demo
+spec:
+  containers:
+  - name: app
+    image: nginx:1.25-alpine
+    ports:
+    - containerPort: 80
+
+    volumeMounts:
+    - name: persistent-storage
+      mountPath: /usr/share/nginx/html  # Mount path in container
+
+  volumes:
+  - name: persistent-storage
+    persistentVolumeClaim:
+      claimName: task-pvc  # Reference to PVC

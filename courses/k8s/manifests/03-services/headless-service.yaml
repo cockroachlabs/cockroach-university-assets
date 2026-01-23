@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-headless
+  labels:
+    app: webapp
+    service-type: headless
+spec:
+  clusterIP: None  # Headless service - no load balancing
+  selector:
+    app: webapp
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  # Headless services are used for StatefulSets
+  # They provide stable network identities for pods
+  # DNS returns pod IPs directly instead of service IP

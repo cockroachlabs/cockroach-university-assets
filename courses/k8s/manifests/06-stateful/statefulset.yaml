@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+  labels:
+    app: nginx-stateful
+spec:
+  serviceName: nginx-headless  # Must match headless service name
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-stateful
+
+  # Pod template
+  template:
+    metadata:
+      labels:
+        app: nginx-stateful
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+          name: http
+
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+
+  # VolumeClaimTemplates - creates a PVC for each pod
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+      # K3s local-path provisioner will automatically create PVs

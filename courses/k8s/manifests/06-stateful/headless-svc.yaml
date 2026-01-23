@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-headless
+  labels:
+    app: nginx-stateful
+spec:
+  clusterIP: None  # Headless service - required for StatefulSets
+  selector:
+    app: nginx-stateful
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  # This service provides stable DNS entries for each pod
+  # Format: <pod-name>.<service-name>.<namespace>.svc.cluster.local
+  # Example: web-0.nginx-headless.default.svc.cluster.local

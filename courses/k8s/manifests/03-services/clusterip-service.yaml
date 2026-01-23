@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-clusterip
+  labels:
+    app: webapp
+    service-type: clusterip
+spec:
+  type: ClusterIP  # Default type - internal only
+  selector:
+    app: webapp
+  ports:
+  - name: http
+    port: 80        # Service port
+    targetPort: 80  # Container port
+    protocol: TCP
+  sessionAffinity: None

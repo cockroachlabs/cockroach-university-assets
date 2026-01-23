@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app: webapp
+    config-type: application
+data:
+  # Simple key-value pairs
+  LOG_LEVEL: "debug"
+  APP_MODE: "development"
+  MAX_CONNECTIONS: "100"
+  TIMEOUT: "30"
+  FEATURE_FLAG_ANALYTICS: "enabled"
