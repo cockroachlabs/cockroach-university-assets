@@ -1,0 +1,70 @@
+# PrometheusRule: CockroachDB alerting rules
+#
+# These alerts cover the critical operational scenarios from the Day-2 Ops module:
+#   - Node liveness failures
+#   - Under-replicated ranges (data safety risk)
+#   - Unavailable ranges (availability impact)
+#   - High storage utilization
+#   - Certificate expiration
+#
+# Requires: Prometheus Operator installed in the cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cockroachdb-alerts
+  labels:
+    app: cockroachdb
+    release: prometheus
+spec:
+  groups:
+    - name: cockroachdb.rules
+      rules:
+        # Node liveness - fires if a node hasn't heartbeated in 5 minutes
+        - alert: CockroachDBNodeDown
+          expr: up{job="cockroachdb"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CockroachDB node is down"
+            description: "Node {{ $labels.instance }} has been unreachable for 5 minutes."
+
+        # Under-replicated ranges - data may not have enough copies
+        - alert: CockroachDBUnderReplicatedRanges
+          expr: ranges_underreplicated > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Under-replicated ranges detected"
+            description: "{{ $value }} ranges are under-replicated on {{ $labels.instance }}."
+
+        # Unavailable ranges - queries against these ranges will fail
+        - alert: CockroachDBUnavailableRanges
+          expr: ranges_unavailable > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Unavailable ranges detected"
+            description: "{{ $value }} ranges are unavailable on {{ $labels.instance }}."
+
+        # Storage capacity - warn before running out of disk
+        - alert: CockroachDBStorageHigh
+          expr: capacity_used / capacity * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CockroachDB storage usage above 80%"
+            description: "Node {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of storage capacity."
+
+        # Certificate expiration - warn 30 days before expiry
+        - alert: CockroachDBCertExpiringSoon
+          expr: security_certificate_expiration_ca < (time() + 30 * 24 * 3600)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "CockroachDB certificate expiring soon"
+            description: "A TLS certificate on {{ $labels.instance }} will expire within 30 days."

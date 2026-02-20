@@ -1,0 +1,38 @@
+# CrdbCluster: 6-node CockroachDB cluster for scaling exercises
+#
+# Used in the operator-scaling lab to demonstrate:
+#   1. Apply this manifest over the existing 3-node cluster
+#   2. The Operator adds 3 new pods to the StatefulSet
+#   3. New nodes join the cluster automatically
+#   4. Ranges rebalance across all 6 nodes
+#
+# To scale back down, apply the 3-node crdbcluster.yaml.
+# The Operator will decommission nodes 3-5 before removing pods.
+apiVersion: crdb.cockroachlabs.com/v1alpha1
+kind: CrdbCluster
+metadata:
+  name: cockroachdb
+spec:
+  dataStore:
+    pvc:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        volumeMode: Filesystem
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  tlsEnabled: true
+  image:
+    name: cockroachdb/cockroach:v24.3.5
+  nodes: 6
+  additionalArgs:
+    - --cache=25%
+    - --max-sql-memory=25%

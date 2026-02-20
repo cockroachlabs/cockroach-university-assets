@@ -1,0 +1,27 @@
+# Headless Service for CockroachDB node discovery
+# clusterIP: None means no load-balanced virtual IP is assigned.
+# Instead, DNS returns A records for each pod directly.
+#
+# DNS format: <pod-name>.<service-name>.<namespace>.svc.cluster.local
+# Example:    cockroachdb-0.cockroachdb.default.svc.cluster.local
+#
+# CockroachDB uses these DNS entries in the --join flag so nodes can
+# discover and connect to each other without static IP addresses.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cockroachdb
+  labels:
+    app: cockroachdb
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: cockroachdb
+  ports:
+    - name: grpc
+      port: 26257
+      targetPort: 26257
+    - name: http
+      port: 8080
+      targetPort: 8080

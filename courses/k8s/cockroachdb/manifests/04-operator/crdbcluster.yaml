@@ -1,0 +1,37 @@
+# CrdbCluster: 3-node CockroachDB cluster managed by the Operator
+#
+# The CockroachDB Operator watches for CrdbCluster resources and manages:
+#   - StatefulSet creation and lifecycle
+#   - TLS certificate generation and rotation
+#   - Cluster initialization (cockroach init)
+#   - Health monitoring and pod replacement
+#
+# This is the recommended way to deploy CockroachDB on Kubernetes.
+apiVersion: crdb.cockroachlabs.com/v1alpha1
+kind: CrdbCluster
+metadata:
+  name: cockroachdb
+spec:
+  dataStore:
+    pvc:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        volumeMode: Filesystem
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  tlsEnabled: true
+  image:
+    name: cockroachdb/cockroach:v24.3.5
+  nodes: 3
+  additionalArgs:
+    - --cache=25%
+    - --max-sql-memory=25%

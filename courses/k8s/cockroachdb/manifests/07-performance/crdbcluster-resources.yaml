@@ -1,0 +1,41 @@
+# CrdbCluster with production-grade resource tuning
+#
+# Key resource management rules for CockroachDB on K8s:
+#   1. Set requests = limits to get Guaranteed QoS class (avoids OOM Killer)
+#   2. --cache and --max-sql-memory should each be ~25% of the memory limit
+#   3. The remaining 50% is used by the Go runtime, Pebble, and overhead
+#   4. Use dedicated node pools in production (avoid noisy neighbors)
+#
+# This manifest configures:
+#   - 4 CPU cores per node (requests = limits)
+#   - 8Gi memory per node (requests = limits)
+#   - cache = 2Gi (25% of 8Gi)
+#   - max-sql-memory = 2Gi (25% of 8Gi)
+apiVersion: crdb.cockroachlabs.com/v1alpha1
+kind: CrdbCluster
+metadata:
+  name: cockroachdb
+spec:
+  dataStore:
+    pvc:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        volumeMode: Filesystem
+  resources:
+    requests:
+      cpu: "4"
+      memory: "8Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+  tlsEnabled: true
+  image:
+    name: cockroachdb/cockroach:v24.3.5
+  nodes: 3
+  additionalArgs:
+    - --cache=2GiB
+    - --max-sql-memory=2GiB

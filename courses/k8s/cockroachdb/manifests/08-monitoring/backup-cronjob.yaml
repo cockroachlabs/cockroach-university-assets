@@ -1,0 +1,59 @@
+# CronJob to run scheduled CockroachDB backups via K8s
+#
+# This demonstrates using a K8s CronJob as an alternative to
+# CockroachDB's built-in BACKUP SCHEDULE for environments where
+# external orchestration is preferred.
+#
+# The job runs cockroach sql to execute a BACKUP statement.
+# In production, replace the nodelocal destination with S3, GCS, or Azure.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cockroachdb-backup
+  labels:
+    app: cockroachdb
+spec:
+  schedule: "0 2 * * *"   # Daily at 2:00 AM UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: cockroachdb-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: cockroachdb/cockroach:v24.3.5
+              command:
+                - cockroach
+                - sql
+                - --certs-dir=/cockroach/cockroach-certs
+                - --host=cockroachdb-public
+                - -e
+                - "BACKUP INTO 'nodelocal://1/backups' WITH revision_history;"
+              volumeMounts:
+                - name: client-certs
+                  mountPath: /cockroach/cockroach-certs
+                  readOnly: true
+          volumes:
+            - name: client-certs
+              projected:
+                sources:
+                  - secret:
+                      name: cockroachdb-node
+                      items:
+                        - key: ca.crt
+                          path: ca.crt
+                  - secret:
+                      name: cockroachdb-root
+                      items:
+                        - key: tls.crt
+                          path: client.root.crt
+                        - key: tls.key
+                          path: client.root.key
+                defaultMode: 0400

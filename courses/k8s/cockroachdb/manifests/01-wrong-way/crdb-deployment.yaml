@@ -1,0 +1,48 @@
+# WARNING: This is intentionally WRONG - CockroachDB should NOT use a Deployment.
+# This manifest exists to demonstrate why StatefulSets (or the Operator) are required.
+#
+# Problems with Deployments for CockroachDB:
+#   1. No stable network identity - pods get random names (crdb-7f8b9-xyz)
+#   2. No stable storage - PVCs are not tied to specific pods
+#   3. No ordered startup/shutdown - all pods start simultaneously
+#   4. Nodes cannot discover each other via DNS
+#   5. cockroach init fails without predictable hostnames
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cockroachdb-wrong
+  labels:
+    app: cockroachdb-wrong
+    purpose: troubleshooting-exercise
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cockroachdb-wrong
+  template:
+    metadata:
+      labels:
+        app: cockroachdb-wrong
+    spec:
+      containers:
+        - name: cockroachdb
+          image: cockroachdb/cockroach:v24.3.5
+          command:
+            - cockroach
+            - start
+            - --insecure
+            - --logtostderr=WARNING
+            # This join list won't work - pod names are unpredictable with Deployments
+            - --join=cockroachdb-wrong-0.cockroachdb:26257,cockroachdb-wrong-1.cockroachdb:26257,cockroachdb-wrong-2.cockroachdb:26257
+          ports:
+            - containerPort: 26257
+              name: grpc
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"

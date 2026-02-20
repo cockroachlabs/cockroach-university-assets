@@ -1,0 +1,91 @@
+# Manual StatefulSet deployment of CockroachDB (without the Operator)
+# Demonstrates stable pod identity and DNS-based discovery.
+#
+# Each pod gets a predictable name: cockroachdb-0, cockroachdb-1, cockroachdb-2
+# Combined with the headless service, each pod is reachable at:
+#   cockroachdb-0.cockroachdb.default.svc.cluster.local:26257
+#
+# NOTE: The Operator automates this and more. This manifest is for
+# educational purposes to understand what the Operator does under the hood.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cockroachdb
+  labels:
+    app: cockroachdb
+spec:
+  serviceName: cockroachdb
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cockroachdb
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: cockroachdb
+    spec:
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: cockroachdb
+          image: cockroachdb/cockroach:v24.3.5
+          command:
+            - cockroach
+            - start
+            - --insecure
+            - --logtostderr=WARNING
+            - --join=cockroachdb-0.cockroachdb:26257,cockroachdb-1.cockroachdb:26257,cockroachdb-2.cockroachdb:26257
+            - --advertise-addr=$(POD_NAME).cockroachdb
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 26257
+              name: grpc
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: datadir
+              mountPath: /cockroach/cockroach-data
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health?ready=1
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - cockroachdb
+                topologyKey: kubernetes.io/hostname
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi

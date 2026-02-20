@@ -1,0 +1,44 @@
+# Secure SQL client pod with TLS certificates
+#
+# This pod mounts the CockroachDB root client certificates from K8s Secrets
+# created by the Operator. The projected volume combines:
+#   - ca.crt from the node secret (CA certificate)
+#   - client.root.crt and client.root.key from the root client secret
+#
+# The cockroachdb-client label allows this pod through the NetworkPolicy.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cockroachdb-client
+  labels:
+    app: cockroachdb-client
+    cockroachdb-client: "true"
+spec:
+  containers:
+    - name: cockroachdb-client
+      image: cockroachdb/cockroach:v24.3.5
+      command:
+        - sleep
+        - "infinity"
+      volumeMounts:
+        - name: client-certs
+          mountPath: /cockroach/cockroach-certs
+          readOnly: true
+  terminationGracePeriodSeconds: 0
+  volumes:
+    - name: client-certs
+      projected:
+        sources:
+          - secret:
+              name: cockroachdb-node
+              items:
+                - key: ca.crt
+                  path: ca.crt
+          - secret:
+              name: cockroachdb-root
+              items:
+                - key: tls.crt
+                  path: client.root.crt
+                - key: tls.key
+                  path: client.root.key
+        defaultMode: 0400

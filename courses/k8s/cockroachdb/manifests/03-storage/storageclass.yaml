@@ -1,0 +1,19 @@
+# StorageClass for CockroachDB with volume expansion enabled
+#
+# Key considerations for CockroachDB storage:
+#   - allowVolumeExpansion: true  -> resize PVCs without recreating pods
+#   - reclaimPolicy: Retain       -> don't delete data when PVC is removed
+#   - volumeBindingMode: WaitForFirstConsumer -> schedule storage near the pod
+#
+# For production, use SSD-backed storage (gp3, pd-ssd) with provisioned IOPS.
+# This example uses K3s local-path for lab environments.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: cockroachdb-storage
+  labels:
+    app: cockroachdb
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer

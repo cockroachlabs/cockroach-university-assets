@@ -1,0 +1,49 @@
+# CrdbCluster with locality awareness for multi-region exercises
+#
+# In a real multi-region deployment, K8s nodes are labeled with:
+#   topology.kubernetes.io/region=us-east-1
+#   topology.kubernetes.io/zone=us-east-1a
+#
+# The Operator passes these labels to CockroachDB as --locality flags,
+# enabling locality-aware features:
+#   - Lease placement near the gateway node
+#   - Geo-partitioned replicas
+#   - Regional by row tables
+#
+# For the lab (single K3s node), we simulate localities using node labels
+# and topologySpreadConstraints.
+apiVersion: crdb.cockroachlabs.com/v1alpha1
+kind: CrdbCluster
+metadata:
+  name: cockroachdb
+spec:
+  dataStore:
+    pvc:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        volumeMode: Filesystem
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  tlsEnabled: true
+  image:
+    name: cockroachdb/cockroach:v24.3.5
+  nodes: 3
+  topology:
+    - key: topology.kubernetes.io/zone
+      values:
+        - us-east-1a
+        - us-east-1b
+        - us-east-1c
+  additionalArgs:
+    - --cache=25%
+    - --max-sql-memory=25%
+    - --locality=region=us-east-1

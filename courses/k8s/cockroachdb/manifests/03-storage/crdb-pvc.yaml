@@ -1,0 +1,19 @@
+# Standalone PVC for CockroachDB data
+# In practice, the Operator or StatefulSet volumeClaimTemplates create PVCs
+# automatically. This manifest is for demonstrating PVC concepts independently.
+#
+# When a CockroachDB pod is deleted and rescheduled, the PVC persists.
+# The new pod re-attaches to the same PVC and Raft catches up any missed writes.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: datadir-cockroachdb-0
+  labels:
+    app: cockroachdb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: cockroachdb-storage
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,28 @@
+# ServiceMonitor for Prometheus to scrape CockroachDB metrics
+#
+# CockroachDB exposes a Prometheus-compatible endpoint at /_status/vars
+# on port 8080. This ServiceMonitor tells the Prometheus Operator to
+# scrape metrics from all CockroachDB pods.
+#
+# Requires: Prometheus Operator installed in the cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cockroachdb
+  labels:
+    app: cockroachdb
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cockroachdb
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+    - port: http
+      path: /_status/vars
+      interval: 15s
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true

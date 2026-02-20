@@ -1,0 +1,44 @@
+# NetworkPolicy restricting access to CockroachDB
+#
+# This policy enforces:
+#   1. Only pods with label "cockroachdb-client: true" can reach SQL port (26257)
+#   2. Only CockroachDB pods can communicate on the inter-node gRPC port (26257)
+#   3. The DB Console (8080) is accessible from any pod in the namespace
+#
+# Without NetworkPolicies, any pod in the cluster can connect to CockroachDB.
+# In production, combine with mTLS for defense in depth.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cockroachdb-access
+  labels:
+    app: cockroachdb
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cockroachdb
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow inter-node communication (gRPC replication)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cockroachdb
+      ports:
+        - port: 26257
+          protocol: TCP
+    # Allow SQL clients with the appropriate label
+    - from:
+        - podSelector:
+            matchLabels:
+              cockroachdb-client: "true"
+      ports:
+        - port: 26257
+          protocol: TCP
+    # Allow DB Console access from within the namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP
