@@ -20786,6 +20786,9 @@ INSERT INTO prerequisites (skill_name, prerequisite_name) VALUES ('add-regions-t
 INSERT INTO prerequisites (skill_name, prerequisite_name) VALUES ('optimize-multi-region-deployments-for-low-latency', 'configure-global-table-locality');
 INSERT INTO prerequisites (skill_name, prerequisite_name) VALUES ('optimize-multi-region-deployments-for-low-latency', 'configure-regional-by-table-locality');
 
+-- Enable vector indexes (required in v25.2)
+SET CLUSTER SETTING feature.vector_index.enabled = true;
+
 -- Create C-SPANN vector index for approximate nearest neighbor search
 CREATE INDEX idx_chunks_embedding ON chunks USING cspann (embedding vector_cosine_ops);
 
