@@ -13,6 +13,10 @@ echo "=========================================="
 echo "[INFO] Deploying CockroachDB ${COCKROACH_VER} (${CRDB_NODES} nodes)"
 echo "=========================================="
 
+# Wait for the CRD to be fully registered
+echo "[INFO] Waiting for CrdbCluster CRD to be established..."
+kubectl wait --for=condition=Established crd/crdbclusters.crdb.cockroachlabs.com --timeout=60s
+
 # Apply the CrdbCluster manifest
 echo "[INFO] Applying CrdbCluster resource..."
 cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
@@ -47,6 +51,8 @@ spec:
 EOF
 
 # Wait for all CockroachDB pods to be ready
+echo "[INFO] Waiting for CockroachDB pods to be created..."
+until kubectl get pods -l app.kubernetes.io/name=cockroachdb -n "${NAMESPACE}" 2>/dev/null | grep -q cockroachdb; do sleep 3; done
 echo "[INFO] Waiting for CockroachDB pods to be ready (this may take a few minutes)..."
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=cockroachdb \
   -n "${NAMESPACE}" --timeout=600s
