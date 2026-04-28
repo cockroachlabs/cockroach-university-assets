@@ -31,7 +31,7 @@ spec:
       memory: "4Gi"
   tlsEnabled: true
   image:
-    name: cockroachdb/cockroach:v24.3.5
+    name: cockroachdb/cockroach:v26.1.3
   nodes: 6
   additionalArgs:
     - --cache=25%

@@ -3,9 +3,9 @@ set -euxo pipefail
 
 # Deploy a CockroachDB cluster using the CockroachDB Operator
 # Usage: ./02-crdb-cluster-deploy.sh [cockroach-version] [nodes]
-# Default: v24.3.5 with 3 nodes
+# Default: v26.1.3 with 3 nodes
 
-COCKROACH_VER=${1:-${COCKROACH_VER:-v24.3.5}}
+COCKROACH_VER=${1:-${COCKROACH_VER:-v26.1.3}}
 CRDB_NODES=${2:-${CRDB_NODES:-3}}
 NAMESPACE=${NAMESPACE:-default}
 
