@@ -19,9 +19,9 @@ kubectl apply -f "https://raw.githubusercontent.com/cockroachdb/cockroach-operat
 echo "[INFO] Applying CockroachDB Operator deployment..."
 kubectl apply -f "https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v${OPERATOR_VER}/install/operator.yaml"
 
-# Wait for the operator pod to be ready
-echo "[INFO] Waiting for CockroachDB Operator pod to be ready..."
-kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=cockroach-operator \
+# Wait for the operator deployment to be available
+echo "[INFO] Waiting for CockroachDB Operator to be available..."
+kubectl wait --for=condition=Available deployment/cockroach-operator-manager \
   -n cockroach-operator-system --timeout=180s
 
 echo "=========================================="
