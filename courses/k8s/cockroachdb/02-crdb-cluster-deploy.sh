@@ -17,9 +17,8 @@ echo "=========================================="
 echo "[INFO] Waiting for CrdbCluster CRD to be established..."
 kubectl wait --for=condition=Established crd/crdbclusters.crdb.cockroachlabs.com --timeout=60s
 
-# Apply the CrdbCluster manifest
-echo "[INFO] Applying CrdbCluster resource..."
-cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
+# Write the CrdbCluster manifest to a temp file
+cat <<EOF > /tmp/crdbcluster.yaml
 apiVersion: crdb.cockroachlabs.com/v1alpha1
 kind: CrdbCluster
 metadata:
@@ -49,6 +48,20 @@ spec:
     - --cache=25%
     - --max-sql-memory=25%
 EOF
+
+# Apply with retry — the operator webhook may need a few seconds after the pod is ready
+echo "[INFO] Applying CrdbCluster resource..."
+set +e
+for attempt in $(seq 1 30); do
+    if kubectl apply -n "${NAMESPACE}" -f /tmp/crdbcluster.yaml 2>&1; then
+        echo "[INFO] CrdbCluster resource applied successfully"
+        break
+    fi
+    echo "[INFO] Waiting for operator webhook to be ready (attempt $attempt/30)..."
+    sleep 5
+done
+set -e
+rm -f /tmp/crdbcluster.yaml
 
 # Wait for all CockroachDB pods to be ready
 echo "[INFO] Waiting for CockroachDB pods to be created..."
