@@ -55,4 +55,4 @@ def get_embeddings():
 
 def get_connection_string():
     """Return the CockroachDB connection string."""
-    return "cockroachdb://root@localhost:26257/raglab?sslmode=verify-full&sslrootcert=/root/certs/ca.crt&sslcert=/root/certs/client.root.crt&sslkey=/root/certs/client.root.key"
+    return "postgresql://root@localhost:26257/raglab?sslmode=verify-full&sslrootcert=/root/certs/ca.crt&sslcert=/root/certs/client.root.crt&sslkey=/root/certs/client.root.key"
