@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-crdb-darker text-white;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-crdb-card/60 backdrop-blur-sm border border-crdb-border rounded-xl;
+  }
+}
+
+/* Globe canvas styling */
+.globe-canvas canvas {
+  outline: none;
+}
+
+/* Region pulse animation */
+@keyframes region-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.region-pulse {
+  animation: region-pulse 2s ease-in-out infinite;
+}
+
+/* Arc glow */
+@keyframes arc-flow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Failed region */
+@keyframes region-fail {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.1; }
+}
+
+.region-failed {
+  animation: region-fail 1.5s ease-in-out infinite;
+}
