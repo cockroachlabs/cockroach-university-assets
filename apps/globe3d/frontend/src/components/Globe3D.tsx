@@ -566,9 +566,10 @@ function ReplicationArc({
       <Line
         points={curvePoints}
         color={color}
-        lineWidth={isBaseline ? 1.5 : 2.5}
-        opacity={isBaseline ? 0.25 : 0.55}
+        lineWidth={isBaseline ? 2 : 3}
+        opacity={isBaseline ? 0.5 : 0.6}
         transparent
+        depthWrite={false}
       />
 
       {/* Data packets traveling forward (from -> to) */}
@@ -694,7 +695,7 @@ function Scene({
             key={`baseline-${from.id}-${to.id}`}
             from={from}
             to={to}
-            color="#64748B"
+            color="#7DD3FC"
             showLatency={featureToggles.showLatency}
             showDataPackets={false}
             isBaseline
