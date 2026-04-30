@@ -134,7 +134,7 @@ function Coastlines() {
 function getNodePositions(lat: number, lng: number, count: number, radius: number): [number, number, number][] {
   if (count <= 1) return [latLngToVector3(lat, lng, radius)]
   const positions: [number, number, number][] = []
-  const spread = 2.5 // degrees offset
+  const spread = 4.0 // degrees offset
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2 - Math.PI / 2
     const offsetLat = lat + Math.sin(angle) * spread
@@ -182,47 +182,53 @@ function NodeDot({
   })
 
   const dotColor = isFailed ? '#EF4444' : color
-  const size = isLeaseholder ? 0.04 : 0.03
+  const size = isLeaseholder ? 0.07 : 0.055
 
   return (
     <group position={position}>
-      {/* Node glow */}
+      {/* Outer glow */}
       <mesh>
-        <sphereGeometry args={[size * 2, 12, 12]} />
-        <meshBasicMaterial color={dotColor} transparent opacity={isFailed ? 0.03 : 0.08} />
+        <sphereGeometry args={[size * 3, 16, 16]} />
+        <meshBasicMaterial color={dotColor} transparent opacity={isFailed ? 0.05 : 0.12} />
+      </mesh>
+
+      {/* Inner glow */}
+      <mesh>
+        <sphereGeometry args={[size * 1.8, 14, 14]} />
+        <meshBasicMaterial color={dotColor} transparent opacity={isFailed ? 0.08 : 0.25} />
       </mesh>
 
       {/* Node core */}
       <mesh ref={meshRef}>
-        <sphereGeometry args={[size, 12, 12]} />
+        <sphereGeometry args={[size, 14, 14]} />
         <meshBasicMaterial
           color={dotColor}
           transparent
-          opacity={isFailed ? 0.15 : isNonVoting ? 0.4 : 0.85}
+          opacity={isFailed ? 0.2 : isNonVoting ? 0.5 : 0.9}
         />
       </mesh>
 
       {/* Non-voting ring indicator */}
       {isNonVoting && !isFailed && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[size * 1.4, size * 1.7, 16]} />
-          <meshBasicMaterial color={dotColor} transparent opacity={0.25} side={THREE.DoubleSide} />
+          <ringGeometry args={[size * 1.5, size * 1.8, 20]} />
+          <meshBasicMaterial color={dotColor} transparent opacity={0.35} side={THREE.DoubleSide} />
         </mesh>
       )}
 
       {/* Leaseholder ring */}
       {isLeaseholder && !isFailed && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[size * 1.8, size * 2.2, 24]} />
-          <meshBasicMaterial color={dotColor} transparent opacity={0.5} side={THREE.DoubleSide} />
+          <ringGeometry args={[size * 1.8, size * 2.3, 32]} />
+          <meshBasicMaterial color={dotColor} transparent opacity={0.6} side={THREE.DoubleSide} />
         </mesh>
       )}
 
       {/* Voting dot border */}
       {isVoting && !isLeaseholder && !isFailed && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[size * 1.3, size * 1.5, 16]} />
-          <meshBasicMaterial color={dotColor} transparent opacity={0.3} side={THREE.DoubleSide} />
+          <ringGeometry args={[size * 1.4, size * 1.7, 20]} />
+          <meshBasicMaterial color={dotColor} transparent opacity={0.4} side={THREE.DoubleSide} />
         </mesh>
       )}
 
@@ -234,13 +240,13 @@ function NodeDot({
           style={{ pointerEvents: 'none' }}
         >
           <div
-            className="text-[7px] font-bold px-1 rounded select-none whitespace-nowrap"
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded select-none whitespace-nowrap"
             style={{
               color: badge.color,
               backgroundColor: badge.bg,
-              border: `1px solid ${badge.color}40`,
-              transform: 'translateY(-10px)',
-              textShadow: isLeaseholder ? `0 0 4px ${badge.color}` : 'none',
+              border: `1px solid ${badge.color}60`,
+              transform: 'translateY(-14px)',
+              textShadow: isLeaseholder ? `0 0 6px ${badge.color}` : 'none',
             }}
           >
             {badge.text}
@@ -401,7 +407,7 @@ function RegionMarker({
       {/* Primary region ring */}
       {isPrimary && !isFailed && (
         <mesh position={centerPos} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.16, 0.19, 32]} />
+          <ringGeometry args={[0.22, 0.26, 32]} />
           <meshBasicMaterial color={color} transparent opacity={0.5} side={THREE.DoubleSide} />
         </mesh>
       )}
@@ -420,25 +426,25 @@ function RegionMarker({
 
       {/* HTML label */}
       <Html
-        position={[centerPos[0], centerPos[1] + 0.2, centerPos[2]]}
+        position={[centerPos[0], centerPos[1] + 0.3, centerPos[2]]}
         center
         distanceFactor={6}
         style={{ pointerEvents: 'none' }}
       >
         <div
           className={`whitespace-nowrap text-center select-none ${isFailed ? 'opacity-30' : ''}`}
-          style={{ transform: 'scale(0.8)' }}
+          style={{ transform: 'scale(1)' }}
         >
           <div
-            className="text-[10px] font-bold tracking-wider uppercase"
-            style={{ color }}
+            className="text-[12px] font-bold tracking-wider uppercase"
+            style={{ color, textShadow: `0 0 8px ${color}60` }}
           >
             {region.label}
             {isPrimary && (
-              <span className="ml-1 text-[8px] opacity-70">PRIMARY</span>
+              <span className="ml-1 text-[9px] opacity-70">PRIMARY</span>
             )}
           </div>
-          <div className="text-[8px] text-white/40 font-mono">
+          <div className="text-[9px] text-white/50 font-mono">
             {region.city} &middot; {region.nodes} nodes
           </div>
           {replicas.length > 0 && (
@@ -520,12 +526,14 @@ function ReplicationArc({
   color,
   showLatency,
   showDataPackets = true,
+  isBaseline = false,
 }: {
   from: RegionConfig
   to: RegionConfig
   color: string
   showLatency: boolean
   showDataPackets?: boolean
+  isBaseline?: boolean
 }) {
   const { curvePoints, curvePath } = useMemo(() => {
     const start = new THREE.Vector3(...latLngToVector3(from.lat, from.lng, GLOBE_RADIUS + 0.05))
@@ -555,7 +563,13 @@ function ReplicationArc({
   return (
     <group>
       {/* Arc line */}
-      <Line points={curvePoints} color={color} lineWidth={1.5} opacity={0.3} transparent />
+      <Line
+        points={curvePoints}
+        color={color}
+        lineWidth={isBaseline ? 1.5 : 2.5}
+        opacity={isBaseline ? 0.25 : 0.55}
+        transparent
+      />
 
       {/* Data packets traveling forward (from -> to) */}
       {showDataPackets && (
@@ -569,11 +583,12 @@ function ReplicationArc({
       {showLatency && midPoint && (
         <Html position={midPoint} center distanceFactor={6} style={{ pointerEvents: 'none' }}>
           <div
-            className="text-[8px] font-mono px-1.5 py-0.5 rounded-full border whitespace-nowrap"
+            className="text-[10px] font-mono font-bold px-2 py-1 rounded-full border whitespace-nowrap"
             style={{
-              color,
-              borderColor: color + '40',
-              backgroundColor: 'rgba(6, 9, 16, 0.8)',
+              color: isBaseline ? '#94A3B8' : color,
+              borderColor: (isBaseline ? '#94A3B8' : color) + '60',
+              backgroundColor: 'rgba(6, 9, 16, 0.9)',
+              textShadow: `0 0 4px ${isBaseline ? '#94A3B8' : color}40`,
             }}
           >
             {latency}ms
@@ -613,9 +628,7 @@ function Scene({
     }
   })
 
-  // Build arcs only from leaseholder regions to other regions with replicas.
-  // This avoids drawing arcs between secondary regions that only have
-  // non-voting replicas (no direct data flow between them).
+  // Build replication arcs from leaseholder regions to other regions with replicas
   const leaseholderRegionIds = new Set(
     replicas.filter(r => r.isLeaseholder).map(r => r.regionId),
   )
@@ -624,7 +637,7 @@ function Scene({
     .filter(r => replicas.some(rep => rep.regionId === r.id))
     .map(r => r.id)
 
-  const arcs: { from: RegionConfig; to: RegionConfig }[] = []
+  const replicationArcs: { from: RegionConfig; to: RegionConfig }[] = []
   const arcKeys = new Set<string>()
   for (const lhId of leaseholderRegionIds) {
     for (const otherId of activeRegionIds) {
@@ -634,7 +647,19 @@ function Scene({
       arcKeys.add(key)
       const fromR = regions.find(r => r.id === lhId)!
       const toR = regions.find(r => r.id === otherId)!
-      arcs.push({ from: fromR, to: toR })
+      replicationArcs.push({ from: fromR, to: toR })
+    }
+  }
+
+  // Baseline network arcs: always show connections between all live regions
+  const baselineArcs: { from: RegionConfig; to: RegionConfig }[] = []
+  const liveRegions = regions.filter(r => !failedRegions.has(r.id))
+  for (let i = 0; i < liveRegions.length; i++) {
+    for (let j = i + 1; j < liveRegions.length; j++) {
+      const key = [liveRegions[i].id, liveRegions[j].id].sort().join('-')
+      if (!arcKeys.has(key)) {
+        baselineArcs.push({ from: liveRegions[i], to: liveRegions[j] })
+      }
     }
   }
 
@@ -663,8 +688,21 @@ function Scene({
           />
         ))}
 
-        {/* Replication arcs — hidden when quorum is lost (DB is down) */}
-        {hasQuorum && arcs.map(({ from, to }) => (
+        {/* Baseline network arcs — always visible between live regions */}
+        {baselineArcs.map(({ from, to }) => (
+          <ReplicationArc
+            key={`baseline-${from.id}-${to.id}`}
+            from={from}
+            to={to}
+            color="#64748B"
+            showLatency={featureToggles.showLatency}
+            showDataPackets={false}
+            isBaseline
+          />
+        ))}
+
+        {/* Replication arcs — active data flow, hidden when quorum is lost */}
+        {hasQuorum && replicationArcs.map(({ from, to }) => (
           <ReplicationArc
             key={`${from.id}-${to.id}`}
             from={from}
