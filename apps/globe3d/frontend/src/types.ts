@@ -165,6 +165,12 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
 ]
 
+export const REGION_TO_CRDB: Record<RegionId, string> = {
+  'us-east': 'us-east1',
+  'eu-west': 'eu-west1',
+  'ap-southeast': 'ap-southeast1',
+}
+
 // --- Challenge Mode (Progressive Disclosure) ---
 
 export interface ChallengeFeatures {

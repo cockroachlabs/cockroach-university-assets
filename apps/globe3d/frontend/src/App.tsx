@@ -16,7 +16,7 @@ import type {
   ScenarioPreset,
   FeatureToggles,
 } from './types'
-import { REGIONS, DEFAULT_FEATURE_TOGGLES } from './types'
+import { REGIONS, DEFAULT_FEATURE_TOGGLES, REGION_TO_CRDB } from './types'
 
 /** Check if a specific node is down (either entire region failed or individual node killed) */
 function isNodeDown(regionId: RegionId, nodeIndex: number, failedRegions: Set<RegionId>, failedNodes: Set<string>): boolean {
@@ -264,10 +264,11 @@ export default function App() {
 
     // Trigger real Docker operations when backend is available
     if (clusterConnected) {
+      const crdbRegion = REGION_TO_CRDB[id]
       if (isCurrentlyFailed) {
-        actions.restartRegion(id)
+        actions.restartRegion(crdbRegion)
       } else {
-        actions.killRegion(id)
+        actions.killRegion(crdbRegion)
       }
     }
   }, [failedRegions, clusterConnected, actions])
@@ -296,7 +297,7 @@ export default function App() {
     // Trigger real Docker operations when backend is available
     if (clusterConnected) {
       const baseIndex = regionToContainerPrefix[regionId] ?? 1
-      const containerName = `crdb-node-${baseIndex + nodeIndex}`
+      const containerName = `${baseIndex + nodeIndex}`
       if (isCurrentlyFailed) {
         actions.restartNode(containerName)
       } else {
@@ -311,7 +312,7 @@ export default function App() {
       const regions = prev.regions.includes(id) ? prev.regions : [...prev.regions, id]
       return { ...prev, primaryRegion: id, regions }
     })
-    if (clusterConnected) actions.setPrimaryRegion(id)
+    if (clusterConnected) actions.setPrimaryRegion(REGION_TO_CRDB[id])
   }, [clusterConnected, actions])
 
   const handleRegionClick = useCallback((id: RegionId) => {
@@ -320,7 +321,7 @@ export default function App() {
       if (!prev.regions.includes(id)) return prev
       return { ...prev, primaryRegion: id }
     })
-    if (clusterConnected) actions.setPrimaryRegion(id)
+    if (clusterConnected) actions.setPrimaryRegion(REGION_TO_CRDB[id])
   }, [clusterConnected, actions])
 
   const handleAddRegionToDb = useCallback((id: RegionId) => {
@@ -329,7 +330,7 @@ export default function App() {
       if (prev.regions.includes(id)) return prev
       return { ...prev, regions: [...prev.regions, id] }
     })
-    if (clusterConnected) actions.addRegion(id)
+    if (clusterConnected) actions.addRegion(REGION_TO_CRDB[id])
   }, [clusterConnected, actions])
 
   const handleRemoveRegionFromDb = useCallback((id: RegionId) => {
@@ -338,7 +339,7 @@ export default function App() {
       if (id === prev.primaryRegion) return prev
       return { ...prev, regions: prev.regions.filter(r => r !== id) }
     })
-    if (clusterConnected) actions.removeRegion(id)
+    if (clusterConnected) actions.removeRegion(REGION_TO_CRDB[id])
   }, [clusterConnected, actions])
 
   const handleCreateDb = useCallback(() => {
