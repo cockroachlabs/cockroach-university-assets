@@ -204,7 +204,7 @@ export default function App() {
     setFeatureToggles(prev => ({ ...prev, [key]: !prev[key] }))
   }, [])
 
-  const { clusterConnected, topology, actions } = useClusterSync()
+  const { clusterConnected, topology, challengeMode, actions } = useClusterSync()
 
   const replicas = useMemo(
     () => computeReplicas(dbConfig, tableConfig, failedRegions, failedNodes),
@@ -409,11 +409,13 @@ export default function App() {
             onRegionClick={handleRegionClick}
           />
 
-          {/* Failure Demo Panel */}
-          <DemoPanel
-            clusterConnected={clusterConnected}
-            onExecuteScenario={actions.executeDemoScenario}
-          />
+          {/* Failure Demo Panel (only in sandbox mode) */}
+          {(!challengeMode || challengeMode.challenge === 0 || challengeMode.challenge === 6) && (
+            <DemoPanel
+              clusterConnected={clusterConnected}
+              onExecuteScenario={actions.executeDemoScenario}
+            />
+          )}
 
           {/* Globe legend overlay */}
           <div className="absolute bottom-4 left-4 flex flex-col gap-1">
@@ -463,6 +465,7 @@ export default function App() {
           replicas={replicas}
           topology={topology}
           featureToggles={featureToggles}
+          challengeMode={challengeMode}
           onToggleRegionFail={handleToggleRegionFail}
           onToggleNodeFail={handleToggleNodeFail}
           onSetPrimaryRegion={handleSetPrimaryRegion}

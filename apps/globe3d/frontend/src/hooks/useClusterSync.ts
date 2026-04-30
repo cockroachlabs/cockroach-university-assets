@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { RegionId, SurvivalGoal, TableLocality } from '../types'
+import type { RegionId, SurvivalGoal, TableLocality, ChallengeMode } from '../types'
 
 interface ClusterState {
   connected: boolean
@@ -80,6 +80,7 @@ export function useClusterSync() {
   const [clusterConnected, setClusterConnected] = useState(false)
   const [replicaData, setReplicaData] = useState<ReplicaData | null>(null)
   const [topology, setTopology] = useState<TopologyData | null>(null)
+  const [challengeMode, setChallengeMode] = useState<ChallengeMode | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval>>()
 
   // Check cluster status
@@ -203,6 +204,13 @@ export function useClusterSync() {
     })
   }, [])
 
+  // Fetch challenge mode
+  const fetchChallengeMode = useCallback(async () => {
+    const data = await apiCall<ChallengeMode>('/challenge/mode')
+    if (data) setChallengeMode(data)
+    return data
+  }, [])
+
   // Fetch pre-built demo scenario SQL arrays
   const fetchDemoScenarios = useCallback(async () => {
     return await apiCall<{
@@ -210,13 +218,15 @@ export function useClusterSync() {
     }>('/demos/globe-scenarios')
   }, [])
 
-  // Poll for status, topology, and replicas
+  // Poll for status, topology, replicas, and challenge mode
   useEffect(() => {
     checkStatus()
     fetchTopology()
+    fetchChallengeMode()
     pollRef.current = setInterval(async () => {
       const status = await checkStatus()
       await fetchTopology()
+      await fetchChallengeMode()
       if (status?.connected && status.database) {
         await fetchReplicas()
       }
@@ -225,7 +235,7 @@ export function useClusterSync() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
-  }, [checkStatus, fetchReplicas, fetchTopology])
+  }, [checkStatus, fetchReplicas, fetchTopology, fetchChallengeMode])
 
   // Map CockroachDB region names to our RegionId
   const mapRegionName = useCallback((crdbRegion: string): RegionId | null => {
@@ -246,6 +256,7 @@ export function useClusterSync() {
     clusterConnected,
     replicaData,
     topology,
+    challengeMode,
     mapRegionName,
     actions: {
       createDatabase,

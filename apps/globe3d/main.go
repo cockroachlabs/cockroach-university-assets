@@ -23,6 +23,8 @@ var (
 	listenAddr = envOr("LISTEN_ADDR", ":9090")
 	staticDir  = envOr("STATIC_DIR", "./dist")
 	containerPrefix = envOr("CONTAINER_PREFIX", "roach-")
+	challengeMode   int
+	challengeMu     sync.RWMutex
 )
 
 func envOr(key, fallback string) string {
@@ -63,6 +65,9 @@ func main() {
 	// Node/region control (Docker)
 	mux.HandleFunc("/api/nodes/", handleNodeAction)
 	mux.HandleFunc("/api/cluster/region/", handleRegionAction)
+
+	// Challenge mode (progressive disclosure for Instruqt)
+	mux.HandleFunc("/api/challenge/mode", handleChallengeMode)
 
 	// Demo scenarios
 	mux.HandleFunc("/api/demos/scenario", handleDemoScenario)
@@ -599,4 +604,84 @@ func handleGlobeScenarios(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResp(w, map[string]any{"scenarios": scenarios})
+}
+
+// --- Challenge Mode (Progressive Disclosure) ---
+
+func challengeFeatures(challenge int) map[string]any {
+	allEnabled := map[string]any{
+		"createDatabase":      true,
+		"dropDatabase":        true,
+		"setPrimary":          true,
+		"addRegion":           true,
+		"removeRegion":        true,
+		"survivalGoal":        "both",
+		"nodeKill":            true,
+		"regionKill":          true,
+		"tableLocality":       true,
+		"quickStartScenarios": true,
+	}
+
+	f := map[string]any{
+		"createDatabase":      false,
+		"dropDatabase":        false,
+		"setPrimary":          false,
+		"addRegion":           false,
+		"removeRegion":        false,
+		"survivalGoal":        "none",
+		"nodeKill":            false,
+		"regionKill":          false,
+		"tableLocality":       false,
+		"quickStartScenarios": false,
+	}
+
+	switch challenge {
+	case 0:
+		return allEnabled
+	case 1:
+		// Deploy — read-only exploration
+	case 2:
+		f["createDatabase"] = true
+		f["setPrimary"] = true
+		f["addRegion"] = true
+	case 3:
+		f["survivalGoal"] = "zone-only"
+		f["nodeKill"] = true
+	case 4:
+		f["survivalGoal"] = "both"
+		f["regionKill"] = true
+	case 5:
+		f["tableLocality"] = true
+	case 6:
+		return allEnabled
+	}
+
+	return f
+}
+
+func handleChallengeMode(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		var body struct {
+			Challenge int `json:"challenge"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		challengeMu.Lock()
+		challengeMode = body.Challenge
+		challengeMu.Unlock()
+		log.Printf("Challenge mode set to %d", body.Challenge)
+		jsonResp(w, map[string]any{
+			"status":    "ok",
+			"challenge": body.Challenge,
+			"features":  challengeFeatures(body.Challenge),
+		})
+		return
+	}
+
+	challengeMu.RLock()
+	mode := challengeMode
+	challengeMu.RUnlock()
+	jsonResp(w, map[string]any{
+		"challenge": mode,
+		"features":  challengeFeatures(mode),
+	})
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { RegionConfig, RegionId, DatabaseConfig, SurvivalGoal, TableLocality, TableConfig, ReplicaInfo, ScenarioPreset, FeatureToggles } from '../types'
+import type { RegionConfig, RegionId, DatabaseConfig, SurvivalGoal, TableLocality, TableConfig, ReplicaInfo, ScenarioPreset, FeatureToggles, ChallengeMode } from '../types'
 import type { TopologyData } from '../hooks/useClusterSync'
-import { LATENCIES, SCENARIO_PRESETS } from '../types'
+import { LATENCIES, SCENARIO_PRESETS, CHALLENGE_LABELS } from '../types'
 
 function getTeachingContent(survivalGoal: SurvivalGoal, tableLocality: TableLocality): {
   title: string
@@ -246,6 +246,11 @@ function RegionCard({
   replicas,
   topology,
   onToggleNodeFail,
+  allowNodeKill = true,
+  allowRegionKill = true,
+  allowSetPrimary = true,
+  allowAddRegion = true,
+  allowRemoveRegion = true,
 }: {
   region: RegionConfig
   isFailed: boolean
@@ -260,6 +265,11 @@ function RegionCard({
   replicas: ReplicaInfo[]
   topology: TopologyData | null
   onToggleNodeFail: (nodeIndex: number) => void
+  allowNodeKill?: boolean
+  allowRegionKill?: boolean
+  allowSetPrimary?: boolean
+  allowAddRegion?: boolean
+  allowRemoveRegion?: boolean
 }) {
   return (
     <div
@@ -390,7 +400,7 @@ function RegionCard({
                 </div>
 
                 {/* Kill/Restore button */}
-                {!isFailed && (
+                {allowNodeKill && !isFailed && (
                   <button
                     className={`text-[8px] px-1.5 py-0.5 rounded transition-colors flex-shrink-0 ${
                       failedNodes.has(nodeKey)
@@ -409,22 +419,24 @@ function RegionCard({
       </div>
 
       <div className="flex gap-1">
-        <button
-          className={`flex-1 px-2 py-1 rounded text-[9px] font-medium transition-colors ${
-            isFailed
-              ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25'
-              : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-          }`}
-          onClick={onToggleFail}
-        >
-          {isFailed ? 'Restore' : 'Kill Region'}
-        </button>
+        {allowRegionKill && (
+          <button
+            className={`flex-1 px-2 py-1 rounded text-[9px] font-medium transition-colors ${
+              isFailed
+                ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25'
+                : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+            }`}
+            onClick={onToggleFail}
+          >
+            {isFailed ? 'Restore' : 'Kill Region'}
+          </button>
+        )}
 
         {hasDb && !isFailed && (
           <>
             {isInDb ? (
               <>
-                {!isPrimary && (
+                {allowSetPrimary && !isPrimary && (
                   <button
                     className="px-2 py-1 rounded text-[9px] font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
                     onClick={onSetPrimary}
@@ -432,7 +444,7 @@ function RegionCard({
                     Set Primary
                   </button>
                 )}
-                {!isPrimary && (
+                {allowRemoveRegion && !isPrimary && (
                   <button
                     className="px-2 py-1 rounded text-[9px] font-medium bg-white/5 text-white/40 hover:bg-red-500/10 hover:text-red-400 transition-colors"
                     onClick={onRemoveFromDb}
@@ -442,12 +454,14 @@ function RegionCard({
                 )}
               </>
             ) : (
-              <button
-                className="px-2 py-1 rounded text-[9px] font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
-                onClick={onAddToDb}
-              >
-                Add to DB
-              </button>
+              allowAddRegion && (
+                <button
+                  className="px-2 py-1 rounded text-[9px] font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  onClick={onAddToDb}
+                >
+                  Add to DB
+                </button>
+              )
             )}
           </>
         )}
@@ -465,6 +479,7 @@ export default function ControlPanel({
   dbConfig,
   tableConfig,
   featureToggles,
+  challengeMode,
   onToggleRegionFail,
   onToggleNodeFail,
   onSetPrimaryRegion,
@@ -485,6 +500,7 @@ export default function ControlPanel({
   dbConfig: DatabaseConfig | null
   tableConfig: TableConfig
   featureToggles: FeatureToggles
+  challengeMode: ChallengeMode | null
   onToggleRegionFail: (id: RegionId) => void
   onToggleNodeFail: (regionId: RegionId, nodeIndex: number) => void
   onSetPrimaryRegion: (id: RegionId) => void
@@ -498,6 +514,19 @@ export default function ControlPanel({
   onLoadScenario: (scenario: ScenarioPreset) => void
 }) {
   const [scenariosOpen, setScenariosOpen] = useState(false)
+
+  // Challenge mode feature flags (null = no challenge mode, show everything)
+  const f = challengeMode?.features
+  const canCreateDb = !f || f.createDatabase
+  const canDropDb = !f || f.dropDatabase
+  const canSetPrimary = !f || f.setPrimary
+  const canAddRegion = !f || f.addRegion
+  const canRemoveRegion = !f || f.removeRegion
+  const survivalMode = f?.survivalGoal ?? 'both'
+  const canNodeKill = !f || f.nodeKill
+  const canRegionKill = !f || f.regionKill
+  const canTableLocality = !f || f.tableLocality
+  const canQuickStart = !f || f.quickStartScenarios
   return (
     <div className="w-80 flex-shrink-0 h-full overflow-y-auto border-l border-crdb-border bg-crdb-darker/80 p-4 flex flex-col gap-5">
       {/* Header */}
@@ -506,8 +535,22 @@ export default function ControlPanel({
         <p className="text-[10px] text-white/40">Configure regions, survival goals, and table locality</p>
       </div>
 
+      {/* Challenge Mode Banner */}
+      {challengeMode && challengeMode.challenge > 0 && (
+        <div className="p-3 rounded-lg bg-crdb-accent/10 border border-crdb-accent/20">
+          <div className="flex items-center gap-2">
+            <div className="text-[11px] font-bold text-crdb-accent">
+              Challenge {challengeMode.challenge}
+            </div>
+            <div className="text-[10px] text-white/40">
+              {CHALLENGE_LABELS[challengeMode.challenge]}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Start Scenarios */}
-      <div>
+      {canQuickStart && <div>
         <button
           className="w-full flex items-center justify-between group"
           onClick={() => setScenariosOpen(prev => !prev)}
@@ -586,7 +629,7 @@ export default function ControlPanel({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </div>}
 
       {/* Regions */}
       <div>
@@ -608,6 +651,11 @@ export default function ControlPanel({
               replicas={replicas}
               topology={topology}
               onToggleNodeFail={(nodeIndex) => onToggleNodeFail(region.id, nodeIndex)}
+              allowNodeKill={canNodeKill}
+              allowRegionKill={canRegionKill}
+              allowSetPrimary={canSetPrimary}
+              allowAddRegion={canAddRegion}
+              allowRemoveRegion={canRemoveRegion}
             />
           ))}
         </div>
@@ -617,24 +665,30 @@ export default function ControlPanel({
       <div>
         <SectionHeader>Database</SectionHeader>
         {dbConfig === null ? (
-          <motion.button
-            className="w-full py-2.5 rounded-lg text-xs font-bold bg-crdb-accent/15 text-crdb-accent border border-crdb-accent/30 hover:bg-crdb-accent/25 transition-colors"
-            onClick={onCreateDb}
-            whileTap={{ scale: 0.97 }}
-          >
-            CREATE DATABASE multi_region
-          </motion.button>
+          canCreateDb ? (
+            <motion.button
+              className="w-full py-2.5 rounded-lg text-xs font-bold bg-crdb-accent/15 text-crdb-accent border border-crdb-accent/30 hover:bg-crdb-accent/25 transition-colors"
+              onClick={onCreateDb}
+              whileTap={{ scale: 0.97 }}
+            >
+              CREATE DATABASE multi_region
+            </motion.button>
+          ) : (
+            <div className="text-[10px] text-white/30 italic p-2">No database configured yet</div>
+          )
         ) : (
           <div className="space-y-3">
             <div className="p-3 rounded-lg border border-crdb-border bg-crdb-card/40">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-mono font-bold text-white/80">{dbConfig.name}</span>
-                <button
-                  className="text-[9px] text-red-400/60 hover:text-red-400 transition-colors"
-                  onClick={onDropDb}
-                >
-                  DROP
-                </button>
+                {canDropDb && (
+                  <button
+                    className="text-[9px] text-red-400/60 hover:text-red-400 transition-colors"
+                    onClick={onDropDb}
+                  >
+                    DROP
+                  </button>
+                )}
               </div>
 
               {/* SQL preview */}
@@ -646,26 +700,28 @@ export default function ControlPanel({
               </pre>
 
               {/* Survival Goal */}
-              <div className="mb-2">
-                <div className="text-[9px] text-white/40 mb-1">Survival Goal</div>
-                <div className="flex gap-1">
-                  {(['zone', 'region'] as SurvivalGoal[]).map(goal => (
-                    <button
-                      key={goal}
-                      className={`flex-1 px-2 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                        dbConfig.survivalGoal === goal
-                          ? goal === 'zone'
-                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-white/5 text-white/30 hover:text-white/50'
-                      }`}
-                      onClick={() => onSetSurvivalGoal(goal)}
-                    >
-                      {goal === 'zone' ? 'Zone Failure' : 'Region Failure'}
-                    </button>
-                  ))}
+              {survivalMode !== 'none' && (
+                <div className="mb-2">
+                  <div className="text-[9px] text-white/40 mb-1">Survival Goal</div>
+                  <div className="flex gap-1">
+                    {(survivalMode === 'zone-only' ? ['zone'] as SurvivalGoal[] : ['zone', 'region'] as SurvivalGoal[]).map(goal => (
+                      <button
+                        key={goal}
+                        className={`flex-1 px-2 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          dbConfig.survivalGoal === goal
+                            ? goal === 'zone'
+                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-white/5 text-white/30 hover:text-white/50'
+                        }`}
+                        onClick={() => onSetSurvivalGoal(goal)}
+                      >
+                        {goal === 'zone' ? 'Zone Failure' : 'Region Failure'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Regions list */}
               <div>
@@ -696,7 +752,7 @@ export default function ControlPanel({
       </div>
 
       {/* Table Locality */}
-      {dbConfig && (
+      {canTableLocality && dbConfig && (
         <div>
           <SectionHeader>Table Locality</SectionHeader>
           <div className="p-3 rounded-lg border border-crdb-border bg-crdb-card/40 space-y-2">

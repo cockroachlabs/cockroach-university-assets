@@ -165,6 +165,35 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
 ]
 
+// --- Challenge Mode (Progressive Disclosure) ---
+
+export interface ChallengeFeatures {
+  createDatabase: boolean
+  dropDatabase: boolean
+  setPrimary: boolean
+  addRegion: boolean
+  removeRegion: boolean
+  survivalGoal: 'none' | 'zone-only' | 'both'
+  nodeKill: boolean
+  regionKill: boolean
+  tableLocality: boolean
+  quickStartScenarios: boolean
+}
+
+export interface ChallengeMode {
+  challenge: number
+  features: ChallengeFeatures
+}
+
+export const CHALLENGE_LABELS: Record<number, string> = {
+  1: 'Deploy & Explore',
+  2: 'Configure Primary Region',
+  3: 'Zone Survival',
+  4: 'Region Survival',
+  5: 'Table Locality Patterns',
+  6: 'Chaos Engineering',
+}
+
 /** Convert lat/lng to 3D position on a unit sphere */
 export function latLngToVector3(lat: number, lng: number, radius: number = 1): [number, number, number] {
   const phi = (90 - lat) * (Math.PI / 180)
