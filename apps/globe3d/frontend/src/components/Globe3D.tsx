@@ -613,17 +613,27 @@ function Scene({
     }
   })
 
-  // Build arcs between active (non-failed) regions that have replicas
+  // Build arcs only from leaseholder regions to other regions with replicas.
+  // This avoids drawing arcs between secondary regions that only have
+  // non-voting replicas (no direct data flow between them).
+  const leaseholderRegionIds = new Set(
+    replicas.filter(r => r.isLeaseholder).map(r => r.regionId),
+  )
   const activeRegionIds = regions
     .filter(r => !failedRegions.has(r.id))
     .filter(r => replicas.some(rep => rep.regionId === r.id))
     .map(r => r.id)
 
   const arcs: { from: RegionConfig; to: RegionConfig }[] = []
-  for (let i = 0; i < activeRegionIds.length; i++) {
-    for (let j = i + 1; j < activeRegionIds.length; j++) {
-      const fromR = regions.find(r => r.id === activeRegionIds[i])!
-      const toR = regions.find(r => r.id === activeRegionIds[j])!
+  const arcKeys = new Set<string>()
+  for (const lhId of leaseholderRegionIds) {
+    for (const otherId of activeRegionIds) {
+      if (lhId === otherId) continue
+      const key = [lhId, otherId].sort().join('-')
+      if (arcKeys.has(key)) continue
+      arcKeys.add(key)
+      const fromR = regions.find(r => r.id === lhId)!
+      const toR = regions.find(r => r.id === otherId)!
       arcs.push({ from: fromR, to: toR })
     }
   }
