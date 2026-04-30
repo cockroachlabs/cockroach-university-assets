@@ -126,7 +126,7 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	var dbInfo map[string]any
 	row := db.QueryRow(fmt.Sprintf(`
 		SELECT primary_region, survival_goal
-		FROM [SHOW DATABASE]
+		FROM [SHOW DATABASES]
 		WHERE database_name = '%s'
 	`, dbName))
 
@@ -358,8 +358,8 @@ func handleCreateDB(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create a demo table
-	db.Exec(fmt.Sprintf(`
+	// Create a demo table — try with region column first, fall back to simple table
+	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s.demo (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			name STRING,
@@ -369,6 +369,15 @@ func handleCreateDB(w http.ResponseWriter, r *http.Request) {
 			created_at TIMESTAMP DEFAULT now()
 		)
 	`, dbName))
+	if err != nil {
+		db.Exec(fmt.Sprintf(`
+			CREATE TABLE IF NOT EXISTS %s.demo (
+				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+				name STRING,
+				created_at TIMESTAMP DEFAULT now()
+			)
+		`, dbName))
+	}
 
 	jsonResp(w, map[string]string{"status": "ok", "database": dbName})
 }
@@ -455,6 +464,8 @@ func handleSetTableLocality(w http.ResponseWriter, r *http.Request) {
 		jsonErr(w, 400, "invalid locality")
 		return
 	}
+
+	db.Exec(fmt.Sprintf("ALTER TABLE %s.demo SET (schema_locked = false)", dbName))
 
 	if _, err := db.Exec(stmt); err != nil {
 		jsonErr(w, 500, fmt.Sprintf("set locality: %v", err))
