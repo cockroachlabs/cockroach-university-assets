@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance Metrics Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1128; border-bottom: 1px solid #2a2040; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.metric-btns { display: flex; gap: 8px; }
+.metric-btns button { padding: 8px 16px; border: 1px solid #2a2040; border-radius: 6px; background: #1a1128; color: #a090c0; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.metric-btns button.active { background: #6933FF; color: #fff; border-color: #6933FF; }
+.metric-btns button:hover:not(.active) { background: #2a2040; color: #e0d8f0; }
+.main { display: flex; flex: 1; min-height: 0; }
+.plot-panel { flex: 2; padding: 12px; }
+.info-panel { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-left: 1px solid #2a2040; }
+.plot-panel svg { width: 100%; height: 100%; cursor: crosshair; }
+.card { background: #1a1128; border: 1px solid #2a2040; border-radius: 8px; padding: 14px; }
+.card h3 { font-size: 14px; margin-bottom: 8px; color: #c0b0e0; }
+.card p { font-size: 12px; line-height: 1.5; color: #a090c0; }
+.formula { font-family: 'Courier New', monospace; background: #0f0a1a; padding: 6px 10px; border-radius: 4px; font-size: 12px; margin: 8px 0; display: block; color: #c0b0e0; }
+.sql-op { font-family: 'Courier New', monospace; color: #8b5cf6; font-weight: 600; }
+.result-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #1a1128; border: 1px solid #2a2040; border-radius: 6px; }
+.rank-badge { width: 24px; height: 24px; border-radius: 50%; background: #6933FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.result-label { font-size: 12px; flex: 1; }
+.result-dist { font-family: 'Courier New', monospace; font-size: 11px; color: #a090c0; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #a090c0; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.results-list { display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Distance Metrics Visualizer</h1>
+  <div class="metric-btns">
+    <button class="active" data-metric="cosine">&lt;=&gt; Cosine</button>
+    <button data-metric="l2">&lt;-&gt; L2</button>
+    <button data-metric="inner">&lt;#&gt; Inner Product</button>
+  </div>
+</div>
+<div class="main">
+  <div class="plot-panel"><svg id="plot" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="info-panel">
+    <div class="card" id="metric-info"></div>
+    <div class="card"><h3>Top 5 Results</h3><div class="results-list" id="results-list"></div></div>
+    <div class="card"><h3>Categories</h3><div class="legend" id="legend"></div></div>
+  </div>
+</div>
+<script>
+var DOCS = [
+  { id: 1,  label: 'Vector search in CRDB',       cat: 'vectors',      x: 0.15, y: 0.20 },
+  { id: 2,  label: 'C-SPANN indexing',             cat: 'vectors',      x: 0.18, y: 0.30 },
+  { id: 3,  label: 'Embedding models comparison',  cat: 'vectors',      x: 0.22, y: 0.15 },
+  { id: 4,  label: 'Vector distance functions',    cat: 'vectors',      x: 0.12, y: 0.25 },
+  { id: 5,  label: 'Raft consensus protocol',      cat: 'architecture', x: 0.55, y: 0.65 },
+  { id: 6,  label: 'Range-based storage',          cat: 'architecture', x: 0.60, y: 0.55 },
+  { id: 7,  label: 'Multi-region deployments',     cat: 'architecture', x: 0.65, y: 0.70 },
+  { id: 8,  label: 'Automatic rebalancing',        cat: 'architecture', x: 0.58, y: 0.60 },
+  { id: 9,  label: 'Serializable isolation',       cat: 'transactions', x: 0.75, y: 0.25 },
+  { id: 10, label: 'Transaction retry logic',      cat: 'transactions', x: 0.80, y: 0.20 },
+  { id: 11, label: 'MVCC and timestamps',          cat: 'transactions', x: 0.78, y: 0.30 },
+  { id: 12, label: 'Node decommissioning',         cat: 'operations',   x: 0.40, y: 0.80 },
+  { id: 13, label: 'Rolling upgrades',             cat: 'operations',   x: 0.35, y: 0.75 },
+  { id: 14, label: 'Backup schedules',             cat: 'operations',   x: 0.42, y: 0.85 }
+];
+
+var CATS = { vectors: '#8b5cf6', architecture: '#06b6d4', transactions: '#10b981', operations: '#f59e0b' };
+var NS = 'http://www.w3.org/2000/svg';
+
+var METRIC_INFO = {
+  cosine: {
+    title: 'Cosine Distance',
+    desc: 'Cosine distance measures the angle between two vectors. Identical direction = 0, opposite = 2. Best for normalized embeddings (OpenAI, Cohere).',
+    formula: 'd = 1 - (A\u00B7B) / (|A| \u00D7 |B|)',
+    sql: '<=>'
+  },
+  l2: {
+    title: 'L2 / Euclidean Distance',
+    desc: 'L2 (Euclidean) distance measures the straight-line distance between two points. Sensitive to vector magnitude. Best for unnormalized embeddings.',
+    formula: 'd = \u221A(\u03A3(a\u1D62 - b\u1D62)\u00B2)',
+    sql: '<->'
+  },
+  inner: {
+    title: 'Negative Inner Product',
+    desc: 'Negative inner product measures alignment and magnitude. CockroachDB returns the negative so ORDER BY ASC gives most similar first. Best for ranking/scoring.',
+    formula: 'd = -(A\u00B7B)',
+    sql: '<#>'
+  }
+};
+
+var PAD = 60, metric = 'cosine', query = { x: 0.45, y: 0.45 };
+var svg = document.getElementById('plot');
+
+function svgEl(tag, attrs) {
+  var el = document.createElementNS(NS, tag);
+  if (attrs) {
+    var keys = Object.keys(attrs);
+    for (var i = 0; i < keys.length; i++) {
+      el.setAttribute(keys[i], attrs[keys[i]]);
+    }
+  }
+  return el;
+}
+
+function dist(a, b, m) {
+  if (m === 'cosine') {
+    var dot = a.x * b.x + a.y * b.y;
+    var magA = Math.sqrt(a.x * a.x + a.y * a.y);
+    var magB = Math.sqrt(b.x * b.x + b.y * b.y);
+    if (magA === 0 || magB === 0) return 1;
+    return 1 - dot / (magA * magB);
+  }
+  if (m === 'l2') {
+    var dx = a.x - b.x; var dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  return -(a.x * b.x + a.y * b.y);
+}
+
+function render() {
+  var rect = svg.getBoundingClientRect();
+  var w = rect.width, h = rect.height;
+  if (w === 0 || h === 0) return;
+  var pw = w - 2 * PAD, ph = h - 2 * PAD;
+
+  // Clear SVG
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // Compute distances and top-5
+  var ranked = DOCS.map(function(d) { return { doc: d, d: dist(query, d, metric) }; });
+  ranked.sort(function(a, b) { return a.d - b.d; });
+  var top5 = ranked.slice(0, 5);
+  var topIds = new Set(top5.map(function(r) { return r.doc.id; }));
+
+  // Background
+  svg.appendChild(svgEl('rect', { width: w, height: h, fill: '#0f0a1a' }));
+
+  // Grid lines
+  for (var i = 0; i <= 10; i++) {
+    var gx = PAD + (i / 10) * pw;
+    var gy = PAD + (i / 10) * ph;
+    svg.appendChild(svgEl('line', { x1: gx, y1: PAD, x2: gx, y2: PAD + ph, stroke: '#1a1128', 'stroke-width': '1' }));
+    svg.appendChild(svgEl('line', { x1: PAD, y1: gy, x2: PAD + pw, y2: gy, stroke: '#1a1128', 'stroke-width': '1' }));
+  }
+
+  // Axes
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD + ph, x2: PAD + pw, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD, x2: PAD, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+
+  // Axis labels
+  for (var t = 0; t <= 10; t += 2) {
+    var v = (t / 10).toFixed(1);
+    var lx = PAD + (t / 10) * pw;
+    var ly = PAD + (1 - t / 10) * ph;
+    var xLabel = svgEl('text', { x: lx, y: PAD + ph + 18, 'text-anchor': 'middle', fill: '#605080', 'font-size': '10' });
+    xLabel.textContent = v;
+    svg.appendChild(xLabel);
+    var yLabel = svgEl('text', { x: PAD - 8, y: ly + 3, 'text-anchor': 'end', fill: '#605080', 'font-size': '10' });
+    yLabel.textContent = v;
+    svg.appendChild(yLabel);
+  }
+
+  // Distance lines to top-5
+  var qx = PAD + query.x * pw, qy = PAD + (1 - query.y) * ph;
+  for (var j = 0; j < top5.length; j++) {
+    var doc = top5[j].doc;
+    var dx = PAD + doc.x * pw, dy = PAD + (1 - doc.y) * ph;
+    svg.appendChild(svgEl('line', { x1: qx, y1: qy, x2: dx, y2: dy, stroke: '#8b5cf6', 'stroke-width': '1.5', 'stroke-dasharray': '6,4', opacity: '0.6' }));
+  }
+
+  // Document points
+  for (var k = 0; k < DOCS.length; k++) {
+    var d = DOCS[k];
+    var cx = PAD + d.x * pw, cy = PAD + (1 - d.y) * ph;
+    var isTop = topIds.has(d.id);
+    var r = isTop ? 8 : 5;
+    var op = isTop ? 1 : 0.4;
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: r, fill: CATS[d.cat], opacity: op }));
+    if (isTop) {
+      var lbl = svgEl('text', { x: cx + 12, y: cy + 4, fill: CATS[d.cat], 'font-size': '11', 'font-weight': '600' });
+      lbl.textContent = d.label;
+      svg.appendChild(lbl);
+    }
+  }
+
+  // Query point with pulse ring
+  var pulseRing = svgEl('circle', { cx: qx, cy: qy, r: '14', fill: 'none', stroke: '#ef4444', 'stroke-width': '2', opacity: '0.4' });
+  var animR = svgEl('animate', { attributeName: 'r', values: '14;20;14', dur: '2s', repeatCount: 'indefinite' });
+  var animO = svgEl('animate', { attributeName: 'opacity', values: '0.4;0.1;0.4', dur: '2s', repeatCount: 'indefinite' });
+  pulseRing.appendChild(animR);
+  pulseRing.appendChild(animO);
+  svg.appendChild(pulseRing);
+  svg.appendChild(svgEl('circle', { cx: qx, cy: qy, r: '6', fill: '#ef4444' }));
+  var qLabel = svgEl('text', { x: qx + 12, y: qy - 10, fill: '#ef4444', 'font-size': '11', 'font-weight': '600' });
+  qLabel.textContent = 'Query';
+  svg.appendChild(qLabel);
+
+  // Update info panel
+  var info = METRIC_INFO[metric];
+  var infoEl = document.getElementById('metric-info');
+  infoEl.textContent = '';
+  var h3 = document.createElement('h3');
+  h3.textContent = info.title;
+  infoEl.appendChild(h3);
+  var p = document.createElement('p');
+  p.textContent = info.desc;
+  infoEl.appendChild(p);
+  var fm = document.createElement('span');
+  fm.className = 'formula';
+  fm.textContent = info.formula;
+  infoEl.appendChild(fm);
+  var sqlP = document.createElement('p');
+  sqlP.textContent = 'SQL operator: ';
+  var sqlSpan = document.createElement('span');
+  sqlSpan.className = 'sql-op';
+  sqlSpan.textContent = info.sql;
+  sqlP.appendChild(sqlSpan);
+  infoEl.appendChild(sqlP);
+
+  // Update results list
+  var rl = document.getElementById('results-list');
+  rl.textContent = '';
+  for (var n = 0; n < top5.length; n++) {
+    var item = document.createElement('div');
+    item.className = 'result-item';
+    var badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    badge.textContent = String(n + 1);
+    var rlbl = document.createElement('span');
+    rlbl.className = 'result-label';
+    rlbl.textContent = top5[n].doc.label;
+    rlbl.style.color = CATS[top5[n].doc.cat];
+    var dv = document.createElement('span');
+    dv.className = 'result-dist';
+    dv.textContent = top5[n].d.toFixed(4);
+    item.appendChild(badge);
+    item.appendChild(rlbl);
+    item.appendChild(dv);
+    rl.appendChild(item);
+  }
+}
+
+// Build legend via DOM
+(function() {
+  var leg = document.getElementById('legend');
+  var cats = [['vectors','Vectors'],['architecture','Architecture'],['transactions','Transactions'],['operations','Operations']];
+  for (var i = 0; i < cats.length; i++) {
+    var item = document.createElement('div');
+    item.className = 'legend-item';
+    var dot = document.createElement('div');
+    dot.className = 'legend-dot';
+    dot.style.background = CATS[cats[i][0]];
+    var txt = document.createElement('span');
+    txt.textContent = cats[i][1];
+    item.appendChild(dot);
+    item.appendChild(txt);
+    leg.appendChild(item);
+  }
+})();
+
+// Click SVG to reposition query
+svg.addEventListener('click', function(e) {
+  var rect = svg.getBoundingClientRect();
+  var pw = rect.width - 2 * PAD, ph = rect.height - 2 * PAD;
+  var mx = e.clientX - rect.left - PAD;
+  var my = e.clientY - rect.top - PAD;
+  query.x = Math.max(0, Math.min(1, mx / pw));
+  query.y = Math.max(0, Math.min(1, 1 - my / ph));
+  render();
+});
+
+// Metric button handlers
+var btns = document.querySelectorAll('.metric-btns button');
+for (var i = 0; i < btns.length; i++) {
+  btns[i].addEventListener('click', function() {
+    for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+    this.classList.add('active');
+    metric = this.getAttribute('data-metric');
+    render();
+  });
+}
+
+window.addEventListener('resize', render);
+window.addEventListener('load', function() { setTimeout(render, 50); });
+</script>
+</body>
+</html>

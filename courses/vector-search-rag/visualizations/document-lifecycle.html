@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Lifecycle Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1128; border-bottom: 1px solid #2a2040; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.action-btns { display: flex; gap: 8px; }
+.action-btns button { padding: 8px 16px; border: 1px solid #2a2040; border-radius: 6px; background: #1a1128; color: #a090c0; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.action-btns button:hover { background: #2a2040; color: #e0d8f0; }
+.action-btns button.update { background: #10b981; color: #fff; border-color: #10b981; }
+.action-btns button.delete { background: #ef4444; color: #fff; border-color: #ef4444; }
+.action-btns button.reset { background: #6933FF; color: #fff; border-color: #6933FF; }
+.main { display: flex; flex: 1; min-height: 0; }
+.graph-panel { flex: 2; padding: 20px; position: relative; }
+.log-panel { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-left: 1px solid #2a2040; }
+.graph-container { position: relative; width: 100%; height: calc(100% - 60px); }
+.doc-card { position: absolute; padding: 16px 20px; background: #1a1128; border: 2px solid #10b981; border-radius: 8px; min-width: 280px; }
+.doc-card h3 { font-size: 15px; color: #10b981; margin-bottom: 6px; }
+.doc-card .timestamp { font-size: 11px; color: #a090c0; font-family: 'Courier New', monospace; }
+.chunk-card { position: absolute; padding: 10px 14px; background: #1a1128; border: 1px solid #2a2040; border-radius: 6px; width: 200px; }
+.chunk-card .chunk-idx { display: inline-block; background: #6933FF; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; }
+.chunk-card .content { font-size: 11px; color: #c0b0e0; line-height: 1.4; margin-bottom: 6px; }
+.chunk-card .embedding { font-size: 10px; color: #605080; font-family: 'Courier New', monospace; }
+.conn-line { position: absolute; border-left: 1.5px solid #2a2040; transform-origin: top left; }
+.card { background: #1a1128; border: 1px solid #2a2040; border-radius: 8px; padding: 14px; }
+.card h3 { font-size: 14px; margin-bottom: 8px; color: #c0b0e0; }
+.log-entry { font-family: 'Courier New', monospace; font-size: 11px; padding: 6px 10px; background: #0f0a1a; border-radius: 4px; color: #8b5cf6; border-left: 2px solid #8b5cf6; }
+.stats-row { display: flex; gap: 12px; margin-top: 8px; }
+.stat-item { flex: 1; text-align: center; padding: 8px; background: #0f0a1a; border-radius: 6px; }
+.stat-value { font-size: 20px; font-weight: 700; color: #10b981; }
+.stat-label { font-size: 10px; color: #a090c0; margin-top: 4px; text-transform: uppercase; }
+.txn-border { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 3px solid #10b981; border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.txn-border.active { opacity: 1; }
+.txn-label { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.3s; }
+.txn-label.active { opacity: 1; }
+.cascade-label { position: absolute; font-size: 10px; color: #ef4444; font-weight: 600; background: rgba(239, 68, 68, 0.2); padding: 3px 8px; border-radius: 4px; opacity: 0; transition: opacity 0.3s; }
+.cascade-label.active { opacity: 1; }
+.checkmark { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity 0.3s; }
+.checkmark.active { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Document Lifecycle Visualizer</h1>
+  <div class="action-btns">
+    <button class="update" id="btn-update">Update Document</button>
+    <button class="delete" id="btn-delete">Delete Document</button>
+    <button class="reset" id="btn-reset">Reset</button>
+  </div>
+</div>
+<div class="main">
+  <div class="graph-panel">
+    <div class="graph-container" id="graph-container">
+      <div class="txn-border" id="txn-border"></div>
+      <div class="txn-label" id="txn-label">ACID Transaction</div>
+      <div class="checkmark" id="checkmark">✓ No orphans — structurally impossible</div>
+    </div>
+  </div>
+  <div class="log-panel">
+    <div class="card">
+      <h3>Operation Log</h3>
+      <div id="log-list"></div>
+    </div>
+    <div class="card">
+      <h3>Database Stats</h3>
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-value" id="stat-docs">1</div>
+          <div class="stat-label">Documents</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-chunks">3</div>
+          <div class="stat-label">Chunks</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-orphans">0</div>
+          <div class="stat-label">Orphaned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var STATE = {
+  doc: { title: 'SQL Performance Tuning', updated: new Date().toISOString() },
+  chunks: [
+    { idx: 0, content: 'Query optimization with indexes...', emb: '[0.23, -0.41, 0.67, ...]' },
+    { idx: 1, content: 'Understanding execution plans...', emb: '[0.15, 0.82, -0.33, ...]' },
+    { idx: 2, content: 'Join strategies and performance...', emb: '[-0.56, 0.29, 0.71, ...]' }
+  ]
+};
+
+var INITIAL_STATE = JSON.parse(JSON.stringify(STATE));
+var animating = false;
+
+function el(tag, attrs) {
+  var e = document.createElement(tag);
+  if (attrs) {
+    Object.keys(attrs).forEach(function(k) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    });
+  }
+  return e;
+}
+
+function log(msg) {
+  var list = document.getElementById('log-list');
+  var entry = el('div', { class: 'log-entry', text: msg });
+  list.appendChild(entry);
+  list.scrollTop = list.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log-list').textContent = '';
+}
+
+function updateStats() {
+  document.getElementById('stat-docs').textContent = STATE.doc ? '1' : '0';
+  document.getElementById('stat-chunks').textContent = String(STATE.chunks.length);
+  document.getElementById('stat-orphans').textContent = '0';
+}
+
+function drawLine(x1, y1, x2, y2, container) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  var angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  var line = el('div', { class: 'conn-line' });
+  line.style.width = len + 'px';
+  line.style.transform = 'rotate(' + angle + 'deg)';
+  line.style.left = x1 + 'px';
+  line.style.top = y1 + 'px';
+  container.appendChild(line);
+}
+
+function render() {
+  var container = document.getElementById('graph-container');
+  var existing = container.querySelectorAll('.doc-card, .chunk-card, .conn-line, .cascade-label');
+  for (var i = 0; i < existing.length; i++) existing[i].remove();
+
+  if (!STATE.doc) return;
+
+  var docCard = el('div', { class: 'doc-card' });
+  docCard.style.left = '50%';
+  docCard.style.top = '40px';
+  docCard.style.transform = 'translateX(-50%)';
+  var h3 = el('h3', { text: STATE.doc.title });
+  var ts = el('div', { class: 'timestamp', text: 'Updated: ' + STATE.doc.updated.substring(0, 19) });
+  docCard.appendChild(h3);
+  docCard.appendChild(ts);
+  container.appendChild(docCard);
+
+  var docRect = docCard.getBoundingClientRect();
+  var containerRect = container.getBoundingClientRect();
+  var docCenterX = docRect.left + docRect.width / 2 - containerRect.left;
+  var docBottomY = docRect.bottom - containerRect.top;
+
+  var startX = 100;
+  var spacing = 220;
+  var chunkY = 200;
+
+  STATE.chunks.forEach(function(chunk, i) {
+    var cx = startX + i * spacing;
+    var card = el('div', { class: 'chunk-card' });
+    card.style.left = cx + 'px';
+    card.style.top = chunkY + 'px';
+    var idx = el('span', { class: 'chunk-idx', text: 'Chunk ' + chunk.idx });
+    var content = el('div', { class: 'content', text: chunk.content });
+    var emb = el('div', { class: 'embedding', text: chunk.emb });
+    card.appendChild(idx);
+    card.appendChild(content);
+    card.appendChild(emb);
+    container.appendChild(card);
+
+    var chunkCenterX = cx + 100;
+    drawLine(docCenterX, docBottomY, chunkCenterX, chunkY, container);
+  });
+
+  updateStats();
+}
+
+function sleep(ms) {
+  return new Promise(function(res) { setTimeout(res, ms); });
+}
+
+async function animateUpdate() {
+  if (animating) return;
+  animating = true;
+  clearLog();
+
+  var txnBorder = document.getElementById('txn-border');
+  var txnLabel = document.getElementById('txn-label');
+  txnBorder.classList.add('active');
+  txnLabel.classList.add('active');
+
+  log('BEGIN');
+  await sleep(500);
+
+  log('DELETE FROM chunks WHERE document_id = ?');
+  await sleep(300);
+
+  var oldChunks = document.querySelectorAll('.chunk-card');
+  for (var i = 0; i < oldChunks.length; i++) {
+    oldChunks[i].style.transition = 'background 0.3s';
+    oldChunks[i].style.background = '#ef4444';
+  }
+  await sleep(300);
+
+  for (var j = 0; j < oldChunks.length; j++) {
+    oldChunks[j].style.transition = 'opacity 0.3s';
+    oldChunks[j].style.opacity = '0';
+  }
+  await sleep(300);
+
+  var lines = document.querySelectorAll('.conn-line');
+  for (var k = 0; k < lines.length; k++) lines[k].remove();
+
+  STATE.chunks = [
+    { idx: 0, content: 'Advanced indexing strategies...', emb: '[0.91, -0.12, 0.44, ...]' },
+    { idx: 1, content: 'Statistics and histogram analysis...', emb: '[0.33, 0.77, -0.58, ...]' },
+    { idx: 2, content: 'Contention management techniques...', emb: '[-0.21, 0.65, 0.38, ...]' },
+    { idx: 3, content: 'Query plan cache behavior...', emb: '[0.58, -0.44, 0.19, ...]' }
+  ];
+
+  for (var m = 0; m < 4; m++) {
+    log('INSERT INTO chunks (document_id, chunk_index, content, embedding) VALUES (?, ' + m + ', ...)');
+  }
+  await sleep(300);
+
+  render();
+
+  var newChunks = document.querySelectorAll('.chunk-card');
+  for (var n = 0; n < newChunks.length; n++) {
+    newChunks[n].style.opacity = '0';
+    newChunks[n].style.transition = 'opacity 0.2s';
+  }
+
+  for (var p = 0; p < newChunks.length; p++) {
+    await sleep(200);
+    newChunks[p].style.opacity = '1';
+    newChunks[p].style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.6)';
+  }
+  await sleep(400);
+
+  for (var q = 0; q < newChunks.length; q++) {
+    newChunks[q].style.boxShadow = '';
+  }
+
+  log('UPDATE documents SET updated_at = now()');
+  STATE.doc.updated = new Date().toISOString();
+  var docCard = document.querySelector('.doc-card');
+  var tsEl = docCard.querySelector('.timestamp');
+  tsEl.textContent = 'Updated: ' + STATE.doc.updated.substring(0, 19);
+  tsEl.style.transition = 'background 0.3s';
+  tsEl.style.background = '#10b981';
+  await sleep(300);
+  tsEl.style.background = '';
+
+  await sleep(300);
+  log('COMMIT');
+  await sleep(300);
+
+  txnBorder.classList.remove('active');
+  txnLabel.classList.remove('active');
+
+  updateStats();
+  animating = false;
+}
+
+async function animateDelete() {
+  if (animating) return;
+  animating = true;
+  clearLog();
+
+  var docCard = document.querySelector('.doc-card');
+  docCard.style.transition = 'background 0.3s';
+  docCard.style.background = '#ef4444';
+  await sleep(300);
+  docCard.style.background = '#1a1128';
+
+  var container = document.getElementById('graph-container');
+  var lines = document.querySelectorAll('.conn-line');
+  for (var i = 0; i < lines.length; i++) {
+    var label = el('div', { class: 'cascade-label', text: 'ON DELETE CASCADE' });
+    label.style.left = lines[i].style.left;
+    label.style.top = (parseInt(lines[i].style.top) + 40) + 'px';
+    container.appendChild(label);
+    setTimeout((function(lbl) {
+      return function() { lbl.classList.add('active'); };
+    })(label), 100);
+  }
+  await sleep(500);
+
+  var chunks = document.querySelectorAll('.chunk-card');
+  for (var j = 0; j < chunks.length; j++) {
+    await sleep(150);
+    chunks[j].style.transition = 'background 0.2s, opacity 0.2s';
+    chunks[j].style.background = '#ef4444';
+    await sleep(200);
+    chunks[j].style.opacity = '0';
+  }
+
+  for (var k = 0; k < lines.length; k++) lines[k].remove();
+  await sleep(300);
+
+  docCard.style.transition = 'opacity 0.3s';
+  docCard.style.opacity = '0';
+  await sleep(300);
+
+  STATE.doc = null;
+  STATE.chunks = [];
+  render();
+
+  var checkmark = document.getElementById('checkmark');
+  checkmark.classList.add('active');
+  await sleep(2000);
+  checkmark.classList.remove('active');
+
+  updateStats();
+  animating = false;
+}
+
+function reset() {
+  if (animating) return;
+  STATE = JSON.parse(JSON.stringify(INITIAL_STATE));
+  clearLog();
+  render();
+}
+
+document.getElementById('btn-update').addEventListener('click', animateUpdate);
+document.getElementById('btn-delete').addEventListener('click', animateDelete);
+document.getElementById('btn-reset').addEventListener('click', reset);
+
+window.addEventListener('load', function() { setTimeout(render, 50); });
+window.addEventListener('resize', render);
+</script>
+</body>
+</html>

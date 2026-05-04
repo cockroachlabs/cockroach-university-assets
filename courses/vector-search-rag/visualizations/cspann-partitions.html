@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C-SPANN Index Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1128; border-bottom: 1px solid #2a2040; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.controls { display: flex; gap: 12px; align-items: center; }
+.mode-btns { display: flex; gap: 2px; background: #1a1128; border: 1px solid #2a2040; border-radius: 6px; overflow: hidden; }
+.mode-btns button { padding: 8px 16px; border: none; background: #1a1128; color: #a090c0; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.mode-btns button.active { background: #06b6d4; color: #fff; }
+.mode-btns button:hover:not(.active) { background: #2a2040; color: #e0d8f0; }
+.action-btn { padding: 8px 20px; border: 1px solid #2a2040; border-radius: 6px; background: #6933FF; color: #fff; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 600; transition: all 0.2s; }
+.action-btn:hover { background: #5a28dd; }
+.reset-btn { background: #1a1128; color: #a090c0; }
+.reset-btn:hover { background: #2a2040; color: #e0d8f0; }
+.main { display: flex; flex: 1; min-height: 0; }
+.plot-panel { flex: 2; padding: 12px; }
+.info-panel { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-left: 1px solid #2a2040; }
+.plot-panel svg { width: 100%; height: 100%; cursor: crosshair; }
+.card { background: #1a1128; border: 1px solid #2a2040; border-radius: 8px; padding: 14px; }
+.card h3 { font-size: 14px; margin-bottom: 10px; color: #06b6d4; }
+.card p { font-size: 12px; line-height: 1.6; color: #a090c0; margin-bottom: 8px; }
+.card ul { font-size: 12px; line-height: 1.6; color: #a090c0; margin-left: 18px; }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+.stat-label { color: #a090c0; }
+.stat-value { color: #e0d8f0; font-weight: 600; font-family: 'Courier New', monospace; }
+.stat-value.highlight { color: #ef4444; }
+.log-entry { font-size: 11px; color: #8090a0; padding: 4px 0; border-bottom: 1px solid #1a1128; }
+.log-entry:last-child { border-bottom: none; }
+.log-list { max-height: 180px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>C-SPANN Index Visualizer</h1>
+  <div class="controls">
+    <div class="mode-btns">
+      <button data-mode="brute">Brute Force</button>
+      <button class="active" data-mode="cspann">C-SPANN</button>
+    </div>
+    <button class="action-btn" id="search-btn">Search</button>
+    <button class="action-btn reset-btn" id="reset-btn">Reset</button>
+  </div>
+</div>
+<div class="main">
+  <div class="plot-panel"><svg id="plot" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="info-panel">
+    <div class="card"><h3>Search Stats</h3><div id="stats"></div></div>
+    <div class="card"><h3>How C-SPANN Works</h3><p>C-SPANN partitions vectors into clusters aligned with CockroachDB ranges. During search, only the nearest partitions are probed—drastically reducing scans at scale.</p><ul><li>Partition centroids act as cluster representatives</li><li>Query finds nearest centroids first</li><li>Only vectors in nearest partitions are scanned</li><li>Rest of database skipped entirely</li></ul></div>
+    <div class="card"><h3>Search Log</h3><div class="log-list" id="log"></div></div>
+  </div>
+</div>
+<script>
+var NS = 'http://www.w3.org/2000/svg';
+var PAD = 50;
+var mode = 'cspann';
+var searching = false;
+var COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+var CENTROIDS = [
+  {x: 0.15, y: 0.20}, {x: 0.50, y: 0.15}, {x: 0.80, y: 0.25},
+  {x: 0.25, y: 0.70}, {x: 0.55, y: 0.75}, {x: 0.82, y: 0.70}
+];
+var PARTITIONS = [];
+var query = { x: 0.45, y: 0.45 };
+var results = [];
+var scanned = 0;
+var partitionsProbed = 0;
+var svg = document.getElementById('plot');
+
+// Seeded random for reproducibility
+var seed = 42;
+function rnd() {
+  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+  return seed / 0x7fffffff;
+}
+
+// Initialize partitions
+for (var i = 0; i < CENTROIDS.length; i++) {
+  var partition = { id: i, centroid: CENTROIDS[i], color: COLORS[i], points: [] };
+  for (var j = 0; j < 10; j++) {
+    partition.points.push({
+      x: CENTROIDS[i].x + (rnd() - 0.5) * 0.15,
+      y: CENTROIDS[i].y + (rnd() - 0.5) * 0.15
+    });
+  }
+  PARTITIONS.push(partition);
+}
+
+function svgEl(tag, attrs) {
+  var el = document.createElementNS(NS, tag);
+  if (attrs) {
+    var keys = Object.keys(attrs);
+    for (var i = 0; i < keys.length; i++) {
+      el.setAttribute(keys[i], attrs[keys[i]]);
+    }
+  }
+  return el;
+}
+
+function dist(a, b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function log(msg) {
+  var logEl = document.getElementById('log');
+  var entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  logEl.insertBefore(entry, logEl.firstChild);
+}
+
+function updateStats() {
+  var statsEl = document.getElementById('stats');
+  statsEl.textContent = '';
+  var rows = [
+    { label: 'Vectors scanned', value: scanned, highlight: mode === 'brute' && scanned === 60 },
+    { label: 'Partitions probed', value: partitionsProbed + (mode === 'brute' ? ' (all)' : ''), highlight: mode === 'brute' },
+    { label: 'Top results', value: results.length }
+  ];
+  for (var i = 0; i < rows.length; i++) {
+    var row = document.createElement('div');
+    row.className = 'stat-row';
+    var lbl = document.createElement('span');
+    lbl.className = 'stat-label';
+    lbl.textContent = rows[i].label + ':';
+    var val = document.createElement('span');
+    val.className = 'stat-value' + (rows[i].highlight ? ' highlight' : '');
+    val.textContent = rows[i].value;
+    row.appendChild(lbl);
+    row.appendChild(val);
+    statsEl.appendChild(row);
+  }
+}
+
+function render() {
+  var rect = svg.getBoundingClientRect();
+  var w = rect.width, h = rect.height;
+  if (w === 0 || h === 0) return;
+  var pw = w - 2 * PAD, ph = h - 2 * PAD;
+
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  svg.appendChild(svgEl('rect', { width: w, height: h, fill: '#0f0a1a' }));
+
+  // Grid
+  for (var i = 0; i <= 10; i++) {
+    var gx = PAD + (i / 10) * pw;
+    var gy = PAD + (i / 10) * ph;
+    svg.appendChild(svgEl('line', { x1: gx, y1: PAD, x2: gx, y2: PAD + ph, stroke: '#1a1128', 'stroke-width': '1' }));
+    svg.appendChild(svgEl('line', { x1: PAD, y1: gy, x2: PAD + pw, y2: gy, stroke: '#1a1128', 'stroke-width': '1' }));
+  }
+
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD + ph, x2: PAD + pw, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD, x2: PAD, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+
+  // Partition regions
+  for (var i = 0; i < PARTITIONS.length; i++) {
+    var p = PARTITIONS[i];
+    var cx = PAD + p.centroid.x * pw;
+    var cy = PAD + (1 - p.centroid.y) * ph;
+    var isProbed = results.length > 0 && results.some(function(r) { return r.partition === i; });
+    svg.appendChild(svgEl('circle', {
+      cx: cx, cy: cy, r: 80,
+      fill: p.color, opacity: '0.08',
+      stroke: p.color, 'stroke-width': isProbed ? '3' : '1', 'stroke-opacity': isProbed ? '0.5' : '0.2'
+    }));
+  }
+
+  // Points
+  for (var i = 0; i < PARTITIONS.length; i++) {
+    var p = PARTITIONS[i];
+    for (var j = 0; j < p.points.length; j++) {
+      var pt = p.points[j];
+      var px = PAD + pt.x * pw;
+      var py = PAD + (1 - pt.y) * ph;
+      svg.appendChild(svgEl('circle', { cx: px, cy: py, r: 4, fill: p.color, opacity: '0.6' }));
+    }
+  }
+
+  // Result lines
+  var qx = PAD + query.x * pw, qy = PAD + (1 - query.y) * ph;
+  for (var i = 0; i < results.length; i++) {
+    var r = results[i];
+    var rx = PAD + r.point.x * pw;
+    var ry = PAD + (1 - r.point.y) * ph;
+    svg.appendChild(svgEl('line', { x1: qx, y1: qy, x2: rx, y2: ry, stroke: '#8b5cf6', 'stroke-width': '1.5', 'stroke-dasharray': '6,4', opacity: '0.7' }));
+  }
+
+  // Query point
+  var pulseRing = svgEl('circle', { cx: qx, cy: qy, r: '12', fill: 'none', stroke: '#ef4444', 'stroke-width': '2', opacity: '0.4' });
+  var animR = svgEl('animate', { attributeName: 'r', values: '12;18;12', dur: '2s', repeatCount: 'indefinite' });
+  var animO = svgEl('animate', { attributeName: 'opacity', values: '0.4;0.1;0.4', dur: '2s', repeatCount: 'indefinite' });
+  pulseRing.appendChild(animR);
+  pulseRing.appendChild(animO);
+  svg.appendChild(pulseRing);
+  svg.appendChild(svgEl('circle', { cx: qx, cy: qy, r: '5', fill: '#ef4444' }));
+  var qLabel = svgEl('text', { x: qx + 10, y: qy - 8, fill: '#ef4444', 'font-size': '11', 'font-weight': '600' });
+  qLabel.textContent = 'Query';
+  svg.appendChild(qLabel);
+}
+
+function sleep(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
+async function searchCspann() {
+  searching = true;
+  results = [];
+  scanned = 0;
+  partitionsProbed = 0;
+  render();
+  updateStats();
+
+  log('Finding nearest partition centroids...');
+  await sleep(500);
+
+  // Find 2 nearest centroids
+  var centDists = PARTITIONS.map(function(p, i) {
+    return { id: i, dist: dist(query, p.centroid) };
+  });
+  centDists.sort(function(a, b) { return a.dist - b.dist; });
+  var nearest = [centDists[0].id, centDists[1].id];
+
+  var candidates = [];
+  for (var i = 0; i < nearest.length; i++) {
+    var pid = nearest[i];
+    log('Probing partition ' + (pid + 1) + '...');
+    partitionsProbed++;
+    var p = PARTITIONS[pid];
+    for (var j = 0; j < p.points.length; j++) {
+      scanned++;
+      candidates.push({ partition: pid, point: p.points[j], dist: dist(query, p.points[j]) });
+    }
+    updateStats();
+    render();
+    await sleep(400);
+  }
+
+  candidates.sort(function(a, b) { return a.dist - b.dist; });
+  results = candidates.slice(0, 5);
+  log('Search complete: top 5 results from ' + scanned + ' vectors');
+  render();
+  updateStats();
+  searching = false;
+}
+
+async function searchBrute() {
+  searching = true;
+  results = [];
+  scanned = 0;
+  partitionsProbed = PARTITIONS.length;
+  render();
+  updateStats();
+
+  log('Starting brute-force scan...');
+  await sleep(400);
+
+  var candidates = [];
+  for (var i = 0; i < PARTITIONS.length; i++) {
+    var p = PARTITIONS[i];
+    for (var j = 0; j < p.points.length; j++) {
+      scanned++;
+      candidates.push({ partition: i, point: p.points[j], dist: dist(query, p.points[j]) });
+      if (scanned % 5 === 0) {
+        updateStats();
+        await sleep(50);
+      }
+    }
+  }
+
+  candidates.sort(function(a, b) { return a.dist - b.dist; });
+  results = candidates.slice(0, 5);
+  log('Brute-force complete: scanned ALL ' + scanned + ' vectors');
+  render();
+  updateStats();
+  searching = false;
+}
+
+function reset() {
+  results = [];
+  scanned = 0;
+  partitionsProbed = 0;
+  query = { x: 0.45, y: 0.45 };
+  log('Reset to initial state');
+  render();
+  updateStats();
+}
+
+svg.addEventListener('click', function(e) {
+  if (searching) return;
+  var rect = svg.getBoundingClientRect();
+  var pw = rect.width - 2 * PAD, ph = rect.height - 2 * PAD;
+  var mx = e.clientX - rect.left - PAD;
+  var my = e.clientY - rect.top - PAD;
+  query.x = Math.max(0, Math.min(1, mx / pw));
+  query.y = Math.max(0, Math.min(1, 1 - my / ph));
+  results = [];
+  scanned = 0;
+  partitionsProbed = 0;
+  log('Query repositioned');
+  render();
+  updateStats();
+});
+
+document.getElementById('search-btn').addEventListener('click', function() {
+  if (searching) return;
+  if (mode === 'cspann') searchCspann();
+  else searchBrute();
+});
+
+document.getElementById('reset-btn').addEventListener('click', reset);
+
+var modeBtns = document.querySelectorAll('.mode-btns button');
+for (var i = 0; i < modeBtns.length; i++) {
+  modeBtns[i].addEventListener('click', function() {
+    for (var j = 0; j < modeBtns.length; j++) modeBtns[j].classList.remove('active');
+    this.classList.add('active');
+    mode = this.getAttribute('data-mode');
+    log('Switched to ' + mode.toUpperCase() + ' mode');
+  });
+}
+
+window.addEventListener('resize', render);
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    render();
+    updateStats();
+    log('Visualizer ready. Click anywhere to move query point.');
+  }, 50);
+});
+</script>
+</body>
+</html>

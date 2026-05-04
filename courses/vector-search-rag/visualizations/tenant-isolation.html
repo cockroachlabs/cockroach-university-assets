@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Tenant Isolation Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1128; border-bottom: 1px solid #2a2040; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.tenant-btns { display: flex; gap: 8px; }
+.tenant-btns button { padding: 8px 16px; border: 1px solid #2a2040; border-radius: 6px; background: #1a1128; color: #a090c0; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.tenant-btns button.active-acme { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+.tenant-btns button.active-globex { background: #06b6d4; color: #fff; border-color: #06b6d4; }
+.tenant-btns button.active-all { background: #fff; color: #1a1128; border-color: #fff; }
+.tenant-btns button:hover:not(.active-acme):not(.active-globex):not(.active-all) { background: #2a2040; color: #e0d8f0; }
+.main { display: flex; flex: 1; min-height: 0; }
+.plot-panel { flex: 2; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.info-panel { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-left: 1px solid #2a2040; }
+.plot-panel svg { width: 100%; flex: 1; cursor: crosshair; }
+.card { background: #1a1128; border: 1px solid #2a2040; border-radius: 8px; padding: 14px; }
+.card h3 { font-size: 14px; margin-bottom: 8px; color: #c0b0e0; }
+.card p { font-size: 12px; line-height: 1.5; color: #a090c0; }
+.sql-code { font-family: 'Courier New', monospace; background: #0f0a1a; padding: 8px 10px; border-radius: 4px; font-size: 11px; margin: 6px 0; display: block; color: #c0b0e0; line-height: 1.6; white-space: pre; }
+.sql-keyword { color: #8b5cf6; }
+.sql-string { color: #06b6d4; }
+.result-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #1a1128; border: 1px solid #2a2040; border-radius: 6px; }
+.rank-badge { width: 24px; height: 24px; border-radius: 50%; background: #6933FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.result-label { font-size: 12px; flex: 1; }
+.result-dist { font-family: 'Courier New', monospace; font-size: 11px; color: #a090c0; }
+.results-list { display: flex; flex-direction: column; gap: 6px; }
+.status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.status-val { font-family: 'Courier New', monospace; color: #c0b0e0; font-weight: 600; }
+.search-btn { width: 100%; padding: 10px; background: #6933FF; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: background 0.2s; }
+.search-btn:hover { background: #5e2dff; }
+.search-btn:disabled { background: #2a2040; color: #605080; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Multi-Tenant Isolation Visualizer</h1>
+  <div class="tenant-btns">
+    <button class="active-acme" data-tenant="acme">Acme</button>
+    <button data-tenant="globex">Globex</button>
+    <button data-tenant="all">All</button>
+  </div>
+</div>
+<div class="main">
+  <div class="plot-panel">
+    <svg id="plot" xmlns="http://www.w3.org/2000/svg"></svg>
+    <button class="search-btn" id="search-btn">Search</button>
+  </div>
+  <div class="info-panel">
+    <div class="card"><h3>Top 5 Results</h3><div class="results-list" id="results-list"></div></div>
+    <div class="card"><h3>SQL Query</h3><div id="sql-panel"></div></div>
+    <div class="card"><h3>Isolation Status</h3><div id="status-panel"></div></div>
+  </div>
+</div>
+<script>
+var DOCS = [
+  { id: 1,  label: 'Architecture Guide',      tenant: 'acme',   x: 0.15, y: 0.75 },
+  { id: 2,  label: 'Performance Tuning',      tenant: 'acme',   x: 0.20, y: 0.70 },
+  { id: 3,  label: 'Backup Strategies',       tenant: 'acme',   x: 0.12, y: 0.65 },
+  { id: 4,  label: 'SQL Best Practices',      tenant: 'acme',   x: 0.25, y: 0.80 },
+  { id: 5,  label: 'Scaling Guide',           tenant: 'acme',   x: 0.18, y: 0.85 },
+  { id: 6,  label: 'Security Hardening',      tenant: 'acme',   x: 0.22, y: 0.60 },
+  { id: 7,  label: 'Migration Playbook',      tenant: 'acme',   x: 0.10, y: 0.72 },
+  { id: 8,  label: 'Multi-Region Setup',      tenant: 'globex', x: 0.75, y: 0.30 },
+  { id: 9,  label: 'Transaction Patterns',    tenant: 'globex', x: 0.80, y: 0.25 },
+  { id: 10, label: 'CDC Configuration',       tenant: 'globex', x: 0.70, y: 0.20 },
+  { id: 11, label: 'Index Optimization',      tenant: 'globex', x: 0.85, y: 0.35 },
+  { id: 12, label: 'Monitoring Setup',        tenant: 'globex', x: 0.78, y: 0.15 },
+  { id: 13, label: 'Disaster Recovery',       tenant: 'globex', x: 0.72, y: 0.28 },
+  { id: 14, label: 'Cluster Sizing',          tenant: 'globex', x: 0.82, y: 0.22 }
+];
+
+var TENANT_COLORS = { acme: '#8b5cf6', globex: '#06b6d4' };
+var NS = 'http://www.w3.org/2000/svg';
+var PAD = 60, tenant = 'acme', query = { x: 0.45, y: 0.45 }, isSearching = false;
+var svg = document.getElementById('plot');
+
+function svgEl(tag, attrs) {
+  var el = document.createElementNS(NS, tag);
+  if (attrs) {
+    var keys = Object.keys(attrs);
+    for (var i = 0; i < keys.length; i++) {
+      el.setAttribute(keys[i], attrs[keys[i]]);
+    }
+  }
+  return el;
+}
+
+function dist(a, b) {
+  var dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function createSQLElement(text, className) {
+  var span = document.createElement('span');
+  if (className) span.className = className;
+  span.textContent = text;
+  return span;
+}
+
+function render() {
+  var rect = svg.getBoundingClientRect();
+  var w = rect.width, h = rect.height;
+  if (w === 0 || h === 0) return;
+  var pw = w - 2 * PAD, ph = h - 2 * PAD;
+
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  svg.appendChild(svgEl('rect', { width: w, height: h, fill: '#0f0a1a' }));
+
+  // Grid
+  for (var i = 0; i <= 10; i++) {
+    var gx = PAD + (i / 10) * pw, gy = PAD + (i / 10) * ph;
+    svg.appendChild(svgEl('line', { x1: gx, y1: PAD, x2: gx, y2: PAD + ph, stroke: '#1a1128', 'stroke-width': '1' }));
+    svg.appendChild(svgEl('line', { x1: PAD, y1: gy, x2: PAD + pw, y2: gy, stroke: '#1a1128', 'stroke-width': '1' }));
+  }
+
+  // Axes
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD + ph, x2: PAD + pw, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+  svg.appendChild(svgEl('line', { x1: PAD, y1: PAD, x2: PAD, y2: PAD + ph, stroke: '#2a2040', 'stroke-width': '1.5' }));
+
+  // Axis labels
+  for (var t = 0; t <= 10; t += 2) {
+    var v = (t / 10).toFixed(1);
+    var lx = PAD + (t / 10) * pw, ly = PAD + (1 - t / 10) * ph;
+    var xLabel = svgEl('text', { x: lx, y: PAD + ph + 18, 'text-anchor': 'middle', fill: '#605080', 'font-size': '10' });
+    xLabel.textContent = v;
+    svg.appendChild(xLabel);
+    var yLabel = svgEl('text', { x: PAD - 8, y: ly + 3, 'text-anchor': 'end', fill: '#605080', 'font-size': '10' });
+    yLabel.textContent = v;
+    svg.appendChild(yLabel);
+  }
+
+  // Document points
+  for (var k = 0; k < DOCS.length; k++) {
+    var d = DOCS[k];
+    var cx = PAD + d.x * pw, cy = PAD + (1 - d.y) * ph;
+    var isFiltered = tenant !== 'all' && d.tenant !== tenant;
+    var color = isFiltered ? '#4a4060' : TENANT_COLORS[d.tenant];
+    var opacity = isFiltered ? 0.3 : 0.7;
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: 7, fill: color, opacity: opacity }));
+
+    if (isFiltered) {
+      var x1 = svgEl('line', { x1: cx - 4, y1: cy - 4, x2: cx + 4, y2: cy + 4, stroke: '#ef4444', 'stroke-width': '2' });
+      var x2 = svgEl('line', { x1: cx + 4, y1: cy - 4, x2: cx - 4, y2: cy + 4, stroke: '#ef4444', 'stroke-width': '2' });
+      svg.appendChild(x1);
+      svg.appendChild(x2);
+    }
+  }
+
+  // Query point
+  var qx = PAD + query.x * pw, qy = PAD + (1 - query.y) * ph;
+  svg.appendChild(svgEl('circle', { cx: qx, cy: qy, r: 6, fill: '#ef4444' }));
+  var qLabel = svgEl('text', { x: qx + 12, y: qy - 10, fill: '#ef4444', 'font-size': '11', 'font-weight': '600' });
+  qLabel.textContent = 'Query';
+  svg.appendChild(qLabel);
+
+  updateSQLPanel();
+  updateStatusPanel();
+}
+
+function updateSQLPanel() {
+  var panel = document.getElementById('sql-panel');
+  panel.textContent = '';
+  var code = document.createElement('div');
+  code.className = 'sql-code';
+
+  code.appendChild(createSQLElement('SELECT', 'sql-keyword'));
+  code.appendChild(createSQLElement(' id, content, embedding '));
+  code.appendChild(createSQLElement('<=>', 'sql-keyword'));
+  code.appendChild(createSQLElement(' query '));
+  code.appendChild(createSQLElement('AS', 'sql-keyword'));
+  code.appendChild(createSQLElement(' distance\n'));
+  code.appendChild(createSQLElement('FROM', 'sql-keyword'));
+  code.appendChild(createSQLElement(' documents\n'));
+
+  if (tenant !== 'all') {
+    code.appendChild(createSQLElement('WHERE', 'sql-keyword'));
+    code.appendChild(createSQLElement(' tenant_id = '));
+    code.appendChild(createSQLElement("'" + tenant + "'", 'sql-string'));
+    code.appendChild(createSQLElement('\n'));
+  }
+
+  code.appendChild(createSQLElement('ORDER BY', 'sql-keyword'));
+  code.appendChild(createSQLElement(' embedding '));
+  code.appendChild(createSQLElement('<=>', 'sql-keyword'));
+  code.appendChild(createSQLElement(' query\n'));
+  code.appendChild(createSQLElement('LIMIT', 'sql-keyword'));
+  code.appendChild(createSQLElement(' 5'));
+
+  panel.appendChild(code);
+}
+
+function updateStatusPanel() {
+  var panel = document.getElementById('status-panel');
+  panel.textContent = '';
+
+  var visible = tenant === 'all' ? DOCS.length : DOCS.filter(function(d) { return d.tenant === tenant; }).length;
+  var filtered = DOCS.length - visible;
+
+  var row1 = document.createElement('div');
+  row1.className = 'status-row';
+  var label1 = document.createElement('span');
+  label1.textContent = 'Visible documents:';
+  label1.style.color = '#a090c0';
+  var val1 = document.createElement('span');
+  val1.className = 'status-val';
+  val1.textContent = visible;
+  row1.appendChild(label1);
+  row1.appendChild(val1);
+  panel.appendChild(row1);
+
+  var row2 = document.createElement('div');
+  row2.className = 'status-row';
+  var label2 = document.createElement('span');
+  label2.textContent = 'Filtered documents:';
+  label2.style.color = '#a090c0';
+  var val2 = document.createElement('span');
+  val2.className = 'status-val';
+  val2.textContent = filtered;
+  row2.appendChild(label2);
+  row2.appendChild(val2);
+  panel.appendChild(row2);
+}
+
+function animateSearch() {
+  if (isSearching) return;
+  isSearching = true;
+  document.getElementById('search-btn').disabled = true;
+
+  var rect = svg.getBoundingClientRect();
+  var w = rect.width, h = rect.height;
+  var pw = w - 2 * PAD, ph = h - 2 * PAD;
+  var qx = PAD + query.x * pw, qy = PAD + (1 - query.y) * ph;
+
+  // Expanding search radius animation
+  var maxRadius = 0;
+  for (var i = 0; i < DOCS.length; i++) {
+    var dx = PAD + DOCS[i].x * pw, dy = PAD + (1 - DOCS[i].y) * ph;
+    var d = Math.sqrt((dx - qx) * (dx - qx) + (dy - qy) * (dy - qy));
+    if (d > maxRadius) maxRadius = d;
+  }
+
+  var frame = 0, totalFrames = 8;
+  var interval = setInterval(function() {
+    var r = (maxRadius * frame) / totalFrames;
+    var existing = document.getElementById('search-radius');
+    if (existing) existing.parentNode.removeChild(existing);
+
+    var circle = svgEl('circle', {
+      id: 'search-radius',
+      cx: qx, cy: qy, r: r,
+      fill: 'none', stroke: '#f59e0b', 'stroke-width': '2', opacity: '0.5'
+    });
+    svg.appendChild(circle);
+
+    frame++;
+    if (frame > totalFrames) {
+      clearInterval(interval);
+      var existing = document.getElementById('search-radius');
+      if (existing) existing.parentNode.removeChild(existing);
+      showResults();
+    }
+  }, 80);
+}
+
+function showResults() {
+  var eligible = tenant === 'all' ? DOCS : DOCS.filter(function(d) { return d.tenant === tenant; });
+  var ranked = eligible.map(function(d) { return { doc: d, d: dist(query, d) }; });
+  ranked.sort(function(a, b) { return a.d - b.d; });
+  var top5 = ranked.slice(0, 5);
+
+  var rect = svg.getBoundingClientRect();
+  var w = rect.width, h = rect.height;
+  var pw = w - 2 * PAD, ph = h - 2 * PAD;
+  var qx = PAD + query.x * pw, qy = PAD + (1 - query.y) * ph;
+
+  // Draw distance lines
+  for (var j = 0; j < top5.length; j++) {
+    var doc = top5[j].doc;
+    var dx = PAD + doc.x * pw, dy = PAD + (1 - doc.y) * ph;
+    svg.appendChild(svgEl('line', {
+      x1: qx, y1: qy, x2: dx, y2: dy,
+      stroke: TENANT_COLORS[doc.tenant], 'stroke-width': '1.5',
+      'stroke-dasharray': '6,4', opacity: '0.6'
+    }));
+  }
+
+  // Highlight top-5 points
+  for (var k = 0; k < top5.length; k++) {
+    var doc = top5[k].doc;
+    var cx = PAD + doc.x * pw, cy = PAD + (1 - doc.y) * ph;
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: 9, fill: TENANT_COLORS[doc.tenant], opacity: '1' }));
+    var lbl = svgEl('text', { x: cx + 14, y: cy + 4, fill: TENANT_COLORS[doc.tenant], 'font-size': '11', 'font-weight': '600' });
+    lbl.textContent = doc.label;
+    svg.appendChild(lbl);
+  }
+
+  // Update results list
+  var rl = document.getElementById('results-list');
+  rl.textContent = '';
+  for (var n = 0; n < top5.length; n++) {
+    var item = document.createElement('div');
+    item.className = 'result-item';
+    var badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    badge.textContent = String(n + 1);
+    var rlbl = document.createElement('span');
+    rlbl.className = 'result-label';
+    rlbl.textContent = top5[n].doc.label;
+    rlbl.style.color = TENANT_COLORS[top5[n].doc.tenant];
+    var dv = document.createElement('span');
+    dv.className = 'result-dist';
+    dv.textContent = top5[n].d.toFixed(4);
+    item.appendChild(badge);
+    item.appendChild(rlbl);
+    item.appendChild(dv);
+    rl.appendChild(item);
+  }
+
+  isSearching = false;
+  document.getElementById('search-btn').disabled = false;
+}
+
+svg.addEventListener('click', function(e) {
+  if (isSearching) return;
+  var rect = svg.getBoundingClientRect();
+  var pw = rect.width - 2 * PAD, ph = rect.height - 2 * PAD;
+  var mx = e.clientX - rect.left - PAD;
+  var my = e.clientY - rect.top - PAD;
+  query.x = Math.max(0, Math.min(1, mx / pw));
+  query.y = Math.max(0, Math.min(1, 1 - my / ph));
+  render();
+});
+
+document.getElementById('search-btn').addEventListener('click', animateSearch);
+
+var btns = document.querySelectorAll('.tenant-btns button');
+for (var i = 0; i < btns.length; i++) {
+  btns[i].addEventListener('click', function() {
+    for (var j = 0; j < btns.length; j++) {
+      btns[j].classList.remove('active-acme', 'active-globex', 'active-all');
+    }
+    tenant = this.getAttribute('data-tenant');
+    if (tenant === 'acme') this.classList.add('active-acme');
+    else if (tenant === 'globex') this.classList.add('active-globex');
+    else this.classList.add('active-all');
+    render();
+  });
+}
+
+window.addEventListener('resize', render);
+window.addEventListener('load', function() { setTimeout(render, 50); });
+</script>
+</body>
+</html>

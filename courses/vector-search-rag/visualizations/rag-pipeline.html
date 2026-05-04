@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Pipeline Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.header { display: flex; align-items: center; padding: 12px 20px; background: #1a1128; border-bottom: 1px solid #2a2040; }
+.header nav { display: flex; gap: 8px; margin-right: auto; }
+.header nav a { padding: 6px 14px; border: 1px solid #2a2040; border-radius: 6px; background: #1a1128; color: #a090c0; text-decoration: none; font-size: 12px; transition: all 0.2s; }
+.header nav a.active { background: #6933FF; color: #fff; border-color: #6933FF; }
+.header nav a:hover:not(.active) { background: #2a2040; color: #e0d8f0; }
+.header h1 { font-size: 18px; font-weight: 600; position: absolute; left: 50%; transform: translateX(-50%); }
+.controls { display: flex; gap: 10px; }
+.btn { padding: 8px 18px; border: 1px solid #2a2040; border-radius: 6px; background: #6933FF; color: #fff; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.btn:hover { background: #5e2dff; }
+.btn:disabled { background: #2a2040; color: #605080; cursor: not-allowed; }
+.btn-reset { background: #1a1128; color: #a090c0; }
+.btn-reset:hover { background: #2a2040; }
+.main { display: flex; flex-direction: column; flex: 1; padding: 20px; gap: 20px; overflow-y: auto; }
+.pipeline { display: flex; align-items: center; gap: 20px; justify-content: center; position: relative; padding: 40px 0; }
+.stage { background: #1a1128; border: 2px solid #2a2040; border-radius: 12px; padding: 20px; min-width: 180px; max-width: 220px; min-height: 200px; display: flex; flex-direction: column; position: relative; transition: all 0.3s; }
+.stage.active { border-color: currentColor; box-shadow: 0 0 20px currentColor; }
+.stage-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; text-align: center; }
+.stage-content { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 11px; overflow: hidden; }
+.doc-preview { background: #0f0a1a; padding: 10px; border-radius: 6px; line-height: 1.4; }
+.doc-title { font-weight: 600; margin-bottom: 6px; color: #3b82f6; }
+.chunk-segment { background: #0f0a1a; padding: 8px; border-radius: 4px; line-height: 1.3; border-left: 3px solid; margin-bottom: 4px; opacity: 0; transform: translateX(-10px); }
+.chunk-segment.visible { opacity: 1; transform: translateX(0); transition: all 0.3s; }
+.embed-item { background: #0f0a1a; padding: 8px; border-radius: 4px; margin-bottom: 6px; }
+.embed-status { font-size: 10px; color: #06b6d4; margin-bottom: 4px; }
+.embed-vector { font-family: 'Courier New', monospace; font-size: 9px; color: #a090c0; word-break: break-all; }
+.embed-dims { font-size: 9px; color: #605080; margin-top: 2px; }
+.store-label { position: absolute; top: -12px; left: 10px; background: #10b981; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; opacity: 0; }
+.store-label.visible { opacity: 1; transition: opacity 0.3s; }
+.store-table { background: #0f0a1a; border-radius: 6px; overflow: hidden; font-size: 10px; }
+.store-header { background: #2a2040; padding: 6px; font-weight: 600; display: grid; grid-template-columns: 30px 1fr 60px; gap: 4px; }
+.store-row { padding: 6px; display: grid; grid-template-columns: 30px 1fr 60px; gap: 4px; border-top: 1px solid #1a1128; opacity: 0; transform: translateY(-5px); }
+.store-row.visible { opacity: 1; transform: translateY(0); transition: all 0.3s; }
+.arrow { width: 40px; height: 2px; background: #2a2040; position: relative; }
+.arrow::after { content: ''; position: absolute; right: -6px; top: -4px; width: 0; height: 0; border-left: 6px solid #2a2040; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.arrow.active { background: currentColor; animation: fillArrow 0.2s ease-out forwards; }
+.arrow.active::after { border-left-color: currentColor; }
+@keyframes fillArrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.tx-boundary { position: absolute; border: 2px dashed #10b981; border-radius: 12px; background: rgba(16, 185, 129, 0.05); pointer-events: none; }
+.tx-label { position: absolute; top: -14px; left: 10px; background: #10b981; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.stats { background: #1a1128; border: 1px solid #2a2040; border-radius: 8px; padding: 16px; display: flex; gap: 30px; justify-content: center; }
+.stat-item { text-align: center; }
+.stat-value { font-size: 28px; font-weight: 700; color: #6933FF; }
+.stat-label { font-size: 12px; color: #a090c0; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <nav>
+    <a href="rag-pipeline.html" class="active">Pipeline Flow</a>
+    <a href="transaction-crash.html">Crash Demo</a>
+  </nav>
+  <h1>RAG Ingestion Pipeline</h1>
+  <div class="controls">
+    <button class="btn" id="runBtn">Run Ingestion</button>
+    <button class="btn btn-reset" id="resetBtn">Reset</button>
+  </div>
+</div>
+<div class="main">
+  <div class="pipeline" id="pipeline"></div>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-value" id="statDocs">0</div>
+      <div class="stat-label">Documents Ingested</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statChunks">0</div>
+      <div class="stat-label">Chunks Created</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statEmbeds">0</div>
+      <div class="stat-label">Embeddings Computed</div>
+    </div>
+  </div>
+</div>
+<script>
+var DOCS = [
+  {
+    title: 'CockroachDB Architecture Guide',
+    chunks: [
+      'CockroachDB uses a distributed SQL architecture with automatic sharding...',
+      'The Raft consensus protocol ensures data consistency across replicas...',
+      'Range-based storage enables horizontal scaling without manual intervention...'
+    ]
+  },
+  {
+    title: 'Vector Search Implementation',
+    chunks: [
+      'Embeddings transform text into high-dimensional vectors for semantic search...',
+      'C-SPANN indexing provides fast approximate nearest neighbor search...',
+      'Distance metrics like cosine similarity determine vector relevance...'
+    ]
+  },
+  {
+    title: 'Transaction Processing',
+    chunks: [
+      'Serializable isolation prevents anomalies in concurrent transactions...',
+      'MVCC with timestamps enables non-blocking reads during writes...',
+      'Automatic retry logic handles transaction conflicts transparently...'
+    ]
+  }
+];
+
+var COLORS = { doc: '#3b82f6', chunk: '#8b5cf6', embed: '#06b6d4', store: '#10b981' };
+var currentDocIdx = 0;
+var stats = { docs: 0, chunks: 0, embeds: 0 };
+var isRunning = false;
+
+function el(tag, attrs, parent) {
+  var e = document.createElement(tag);
+  if (attrs) {
+    for (var k in attrs) {
+      if (k === 'text') e.textContent = attrs[k];
+      else if (k === 'style') e.style.cssText = attrs[k];
+      else if (k === 'class') e.className = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function wait(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
+function buildPipeline() {
+  var container = document.getElementById('pipeline');
+  container.textContent = '';
+
+  // Stage 1: Document
+  var docStage = el('div', { class: 'stage', id: 'stageDoc' }, container);
+  docStage.style.color = COLORS.doc;
+  el('div', { class: 'stage-title', text: 'Document' }, docStage);
+  var docContent = el('div', { class: 'stage-content', id: 'docContent' }, docStage);
+
+  // Arrow 1
+  var arr1 = el('div', { class: 'arrow', id: 'arrow1' }, container);
+  arr1.style.color = COLORS.chunk;
+
+  // Stage 2: Chunk
+  var chunkStage = el('div', { class: 'stage', id: 'stageChunk' }, container);
+  chunkStage.style.color = COLORS.chunk;
+  el('div', { class: 'stage-title', text: 'Chunk' }, chunkStage);
+  var chunkContent = el('div', { class: 'stage-content', id: 'chunkContent' }, chunkStage);
+
+  // Arrow 2
+  var arr2 = el('div', { class: 'arrow', id: 'arrow2' }, container);
+  arr2.style.color = COLORS.embed;
+
+  // Stage 3: Embed
+  var embedStage = el('div', { class: 'stage', id: 'stageEmbed' }, container);
+  embedStage.style.color = COLORS.embed;
+  el('div', { class: 'stage-title', text: 'Embed' }, embedStage);
+  var embedContent = el('div', { class: 'stage-content', id: 'embedContent' }, embedStage);
+
+  // Arrow 3
+  var arr3 = el('div', { class: 'arrow', id: 'arrow3' }, container);
+  arr3.style.color = COLORS.store;
+
+  // Stage 4: Store
+  var storeStage = el('div', { class: 'stage', id: 'stageStore' }, container);
+  storeStage.style.color = COLORS.store;
+  el('div', { class: 'store-label', id: 'beginLabel', text: 'BEGIN' }, storeStage);
+  el('div', { class: 'stage-title', text: 'Store' }, storeStage);
+  var storeContent = el('div', { class: 'stage-content', id: 'storeContent' }, storeStage);
+  el('div', { class: 'store-label', id: 'commitLabel', text: 'COMMIT', style: 'top: auto; bottom: -12px;' }, storeStage);
+
+  // Transaction boundary
+  setTimeout(function() {
+    var cb = chunkStage.getBoundingClientRect();
+    var eb = embedStage.getBoundingClientRect();
+    var sb = storeStage.getBoundingClientRect();
+    var pb = container.getBoundingClientRect();
+    var left = cb.left - pb.left - 15;
+    var top = cb.top - pb.top - 25;
+    var width = (sb.right - cb.left) + 30;
+    var height = cb.height + 50;
+    var txBound = el('div', { class: 'tx-boundary' }, container);
+    txBound.style.left = left + 'px';
+    txBound.style.top = top + 'px';
+    txBound.style.width = width + 'px';
+    txBound.style.height = height + 'px';
+    el('div', { class: 'tx-label', text: 'ACID Transaction' }, txBound);
+  }, 50);
+}
+
+async function animate() {
+  if (isRunning) return;
+  isRunning = true;
+  document.getElementById('runBtn').disabled = true;
+
+  var doc = DOCS[currentDocIdx];
+
+  // Step 1: Document stage
+  var docContent = document.getElementById('docContent');
+  docContent.textContent = '';
+  var preview = el('div', { class: 'doc-preview' }, docContent);
+  el('div', { class: 'doc-title', text: doc.title }, preview);
+  el('div', { text: doc.chunks[0].substring(0, 80) + '...' }, preview);
+  document.getElementById('stageDoc').classList.add('active');
+  await wait(400);
+  document.getElementById('stageDoc').classList.remove('active');
+
+  // Arrow 1
+  document.getElementById('arrow1').classList.add('active');
+  await wait(200);
+
+  // Step 2: Chunk stage
+  var chunkContent = document.getElementById('chunkContent');
+  chunkContent.textContent = '';
+  document.getElementById('stageChunk').classList.add('active');
+  var chunkColors = ['#8b5cf6', '#a78bfa', '#c4b5fd'];
+  for (var i = 0; i < doc.chunks.length; i++) {
+    var seg = el('div', { class: 'chunk-segment', text: doc.chunks[i].substring(0, 60) + '...' }, chunkContent);
+    seg.style.borderLeftColor = chunkColors[i];
+    await wait(50);
+    seg.classList.add('visible');
+    await wait(300);
+  }
+  await wait(200);
+  document.getElementById('stageChunk').classList.remove('active');
+
+  // Arrow 2
+  document.getElementById('arrow2').classList.add('active');
+  await wait(200);
+
+  // Step 3: Embed stage
+  var embedContent = document.getElementById('embedContent');
+  embedContent.textContent = '';
+  document.getElementById('stageEmbed').classList.add('active');
+  for (var j = 0; j < doc.chunks.length; j++) {
+    var item = el('div', { class: 'embed-item' }, embedContent);
+    var status = el('div', { class: 'embed-status', text: 'Computing vector...' }, item);
+    await wait(200);
+    var vector = [];
+    for (var k = 0; k < 8; k++) vector.push((Math.random() * 2 - 1).toFixed(2));
+    status.textContent = '';
+    el('div', { class: 'embed-vector', text: '[' + vector.join(', ') + ', ...]' }, item);
+    el('div', { class: 'embed-dims', text: '(768 dims)' }, item);
+    await wait(200);
+  }
+  await wait(200);
+  document.getElementById('stageEmbed').classList.remove('active');
+
+  // Arrow 3
+  document.getElementById('arrow3').classList.add('active');
+  await wait(200);
+
+  // Step 4: Store stage
+  var storeContent = document.getElementById('storeContent');
+  storeContent.textContent = '';
+  document.getElementById('stageStore').classList.add('active');
+  document.getElementById('beginLabel').classList.add('visible');
+
+  var table = el('div', { class: 'store-table' }, storeContent);
+  var header = el('div', { class: 'store-header' }, table);
+  el('div', { text: 'idx' }, header);
+  el('div', { text: 'content' }, header);
+  el('div', { text: 'embed' }, header);
+
+  for (var n = 0; n < doc.chunks.length; n++) {
+    var row = el('div', { class: 'store-row' }, table);
+    el('div', { text: String(n + 1) }, row);
+    el('div', { text: doc.chunks[n].substring(0, 20) + '...' }, row);
+    el('div', { text: '[...]' }, row);
+    await wait(50);
+    row.classList.add('visible');
+    await wait(300);
+  }
+
+  await wait(200);
+  document.getElementById('commitLabel').classList.add('visible');
+  await wait(300);
+  document.getElementById('stageStore').classList.remove('active');
+
+  // Update stats
+  stats.docs++;
+  stats.chunks += doc.chunks.length;
+  stats.embeds += doc.chunks.length;
+  document.getElementById('statDocs').textContent = String(stats.docs);
+  document.getElementById('statChunks').textContent = String(stats.chunks);
+  document.getElementById('statEmbeds').textContent = String(stats.embeds);
+
+  currentDocIdx = (currentDocIdx + 1) % DOCS.length;
+  document.getElementById('runBtn').textContent = 'Run Again';
+  document.getElementById('runBtn').disabled = false;
+  isRunning = false;
+}
+
+function reset() {
+  currentDocIdx = 0;
+  stats = { docs: 0, chunks: 0, embeds: 0 };
+  document.getElementById('statDocs').textContent = '0';
+  document.getElementById('statChunks').textContent = '0';
+  document.getElementById('statEmbeds').textContent = '0';
+  document.getElementById('runBtn').textContent = 'Run Ingestion';
+  document.getElementById('runBtn').disabled = false;
+  buildPipeline();
+  isRunning = false;
+}
+
+document.getElementById('runBtn').addEventListener('click', animate);
+document.getElementById('resetBtn').addEventListener('click', reset);
+window.addEventListener('load', function() { setTimeout(buildPipeline, 50); });
+window.addEventListener('resize', buildPipeline);
+</script>
+</body>
+</html>
