@@ -45,7 +45,7 @@ body { background: #0f0a1a; color: #e0d8f0; font-family: 'Segoe UI', system-ui, 
 .arrow.active { background: currentColor; animation: fillArrow 0.2s ease-out forwards; }
 .arrow.active::after { border-left-color: currentColor; }
 @keyframes fillArrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.tx-boundary { position: absolute; border: 3px dashed #10b981; border-radius: 16px; background: rgba(16, 185, 129, 0.06); pointer-events: none; }
+.tx-boundary { display: flex; align-items: center; gap: 16px; border: 3px dashed #10b981; border-radius: 16px; background: rgba(16, 185, 129, 0.06); padding: 30px 20px 20px 20px; position: relative; }
 .tx-label { position: absolute; top: -16px; left: 14px; background: #10b981; color: #fff; padding: 4px 14px; border-radius: 6px; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
 .stats { background: #1a1128; border: 1px solid #2a2040; border-radius: 10px; padding: 18px; display: flex; gap: 40px; justify-content: center; flex-shrink: 0; }
 .stat-item { text-align: center; }
@@ -145,61 +145,47 @@ function buildPipeline() {
   var container = document.getElementById('pipeline');
   container.textContent = '';
 
-  // Stage 1: Document
+  // Stage 1: Document (outside transaction boundary)
   var docStage = el('div', { class: 'stage', id: 'stageDoc' }, container);
   docStage.style.color = COLORS.doc;
   el('div', { class: 'stage-title', text: 'Document' }, docStage);
-  var docContent = el('div', { class: 'stage-content', id: 'docContent' }, docStage);
+  el('div', { class: 'stage-content', id: 'docContent' }, docStage);
 
-  // Arrow 1
+  // Arrow into transaction
   var arr1 = el('div', { class: 'arrow', id: 'arrow1' }, container);
   arr1.style.color = COLORS.chunk;
 
+  // Transaction boundary wrapper (contains Chunk + Embed + Store)
+  var txBound = el('div', { class: 'tx-boundary' }, container);
+  el('div', { class: 'tx-label', text: 'ACID Transaction' }, txBound);
+
   // Stage 2: Chunk
-  var chunkStage = el('div', { class: 'stage', id: 'stageChunk' }, container);
+  var chunkStage = el('div', { class: 'stage', id: 'stageChunk' }, txBound);
   chunkStage.style.color = COLORS.chunk;
   el('div', { class: 'stage-title', text: 'Chunk' }, chunkStage);
-  var chunkContent = el('div', { class: 'stage-content', id: 'chunkContent' }, chunkStage);
+  el('div', { class: 'stage-content', id: 'chunkContent' }, chunkStage);
 
   // Arrow 2
-  var arr2 = el('div', { class: 'arrow', id: 'arrow2' }, container);
+  var arr2 = el('div', { class: 'arrow', id: 'arrow2' }, txBound);
   arr2.style.color = COLORS.embed;
 
   // Stage 3: Embed
-  var embedStage = el('div', { class: 'stage', id: 'stageEmbed' }, container);
+  var embedStage = el('div', { class: 'stage', id: 'stageEmbed' }, txBound);
   embedStage.style.color = COLORS.embed;
   el('div', { class: 'stage-title', text: 'Embed' }, embedStage);
-  var embedContent = el('div', { class: 'stage-content', id: 'embedContent' }, embedStage);
+  el('div', { class: 'stage-content', id: 'embedContent' }, embedStage);
 
   // Arrow 3
-  var arr3 = el('div', { class: 'arrow', id: 'arrow3' }, container);
+  var arr3 = el('div', { class: 'arrow', id: 'arrow3' }, txBound);
   arr3.style.color = COLORS.store;
 
   // Stage 4: Store
-  var storeStage = el('div', { class: 'stage', id: 'stageStore' }, container);
+  var storeStage = el('div', { class: 'stage', id: 'stageStore' }, txBound);
   storeStage.style.color = COLORS.store;
   el('div', { class: 'store-label', id: 'beginLabel', text: 'BEGIN' }, storeStage);
   el('div', { class: 'stage-title', text: 'Store' }, storeStage);
-  var storeContent = el('div', { class: 'stage-content', id: 'storeContent' }, storeStage);
+  el('div', { class: 'stage-content', id: 'storeContent' }, storeStage);
   el('div', { class: 'store-label', id: 'commitLabel', text: 'COMMIT', style: 'top: auto; bottom: -12px;' }, storeStage);
-
-  // Transaction boundary
-  setTimeout(function() {
-    var cb = chunkStage.getBoundingClientRect();
-    var eb = embedStage.getBoundingClientRect();
-    var sb = storeStage.getBoundingClientRect();
-    var pb = container.getBoundingClientRect();
-    var left = cb.left - pb.left - 15;
-    var top = cb.top - pb.top - 25;
-    var width = (sb.right - cb.left) + 30;
-    var height = cb.height + 50;
-    var txBound = el('div', { class: 'tx-boundary' }, container);
-    txBound.style.left = left + 'px';
-    txBound.style.top = top + 'px';
-    txBound.style.width = width + 'px';
-    txBound.style.height = height + 'px';
-    el('div', { class: 'tx-label', text: 'ACID Transaction' }, txBound);
-  }, 50);
 }
 
 async function animate() {
