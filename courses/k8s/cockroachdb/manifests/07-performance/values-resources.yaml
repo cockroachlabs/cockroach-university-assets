@@ -1,0 +1,42 @@
+# Helm values.yaml with production-grade resource tuning
+#
+# Key resource management rules for CockroachDB on K8s:
+#   1. Set requests = limits to get Guaranteed QoS class (avoids OOM Killer)
+#   2. --cache and --max-sql-memory should each be ~25% of the memory limit
+#   3. The remaining 50% is used by the Go runtime, Pebble, and overhead
+#   4. Use dedicated node pools in production (avoid noisy neighbors)
+#
+# This configuration:
+#   - 4 CPU cores per node (requests = limits)
+#   - 8Gi memory per node (requests = limits)
+#   - cache = 2Gi (25% of 8Gi)
+#   - max-sql-memory = 2Gi (25% of 8Gi)
+cockroachdb:
+  crdbCluster:
+    image:
+      name: cockroachdb/cockroach:v26.1.3
+    dataStore:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+    regions:
+      - code: "us-east1"
+        nodes: 3
+        namespace: cockroachdb
+        cloudProvider: GKE
+    podTemplate:
+      spec:
+        resources:
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+    additionalArgs:
+      - --cache=2GiB
+      - --max-sql-memory=2GiB

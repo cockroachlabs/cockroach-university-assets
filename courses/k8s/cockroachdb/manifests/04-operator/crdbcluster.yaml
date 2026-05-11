@@ -1,7 +1,7 @@
 # CrdbCluster: 3-node CockroachDB cluster managed by the Operator
 #
 # The CockroachDB Operator watches for CrdbCluster resources and manages:
-#   - StatefulSet creation and lifecycle
+#   - Pod creation and lifecycle (via CrdbCluster and CrdbNode CRDs)
 #   - TLS certificate generation and rotation
 #   - Cluster initialization (cockroach init)
 #   - Health monitoring and pod replacement

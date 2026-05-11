@@ -1,0 +1,50 @@
+# Helm values.yaml for multi-region CockroachDB deployment
+#
+# The CockroachDB Operator (Preview) maps regions[].code to --locality
+# flags automatically. Each region entry corresponds to a K8s cluster.
+#
+# Prerequisites for multi-region:
+#   - One operator per K8s cluster/region
+#   - VPC peering between clusters
+#   - CoreDNS forwarding for cross-cluster DNS resolution
+#   - Shared CA certificate across all regions
+#
+# For the lab (single K3s node), we simulate a single-region deployment
+# and discuss multi-region concepts using this reference configuration.
+cockroachdb:
+  crdbCluster:
+    image:
+      name: cockroachdb/cockroach:v26.1.3
+    dataStore:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+    regions:
+      - code: "us-east1"
+        nodes: 3
+        namespace: cockroachdb
+        cloudProvider: GKE
+      - code: "eu-west1"
+        nodes: 3
+        namespace: cockroachdb
+        cloudProvider: GKE
+      - code: "ap-southeast1"
+        nodes: 3
+        namespace: cockroachdb
+        cloudProvider: GKE
+    podTemplate:
+      spec:
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+    additionalArgs:
+      - --cache=25%
+      - --max-sql-memory=25%

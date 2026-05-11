@@ -1,5 +1,5 @@
 # Standalone PVC for CockroachDB data
-# In practice, the Operator or StatefulSet volumeClaimTemplates create PVCs
+# In practice, the Operator creates PVCs
 # automatically. This manifest is for demonstrating PVC concepts independently.
 #
 # When a CockroachDB pod is deleted and rescheduled, the PVC persists.

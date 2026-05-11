@@ -1,0 +1,40 @@
+# Helm values.yaml: 3-node CockroachDB cluster
+#
+# The CockroachDB Operator (Preview) uses Helm charts to manage:
+#   - Pod creation and lifecycle (via CrdbCluster and CrdbNode CRDs)
+#   - TLS certificate generation and rotation (self-signer)
+#   - Cluster initialization (cockroach init)
+#   - Health monitoring and pod replacement
+#
+# Deploy with:
+#   helm install cockroachdb charts/cockroachdb -f values.yaml \
+#     --namespace cockroachdb --create-namespace
+cockroachdb:
+  crdbCluster:
+    image:
+      name: cockroachdb/cockroach:v26.1.3
+    dataStore:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+    regions:
+      - code: "us-east1"
+        nodes: 3
+        namespace: cockroachdb
+        cloudProvider: GKE
+    podTemplate:
+      spec:
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+    additionalArgs:
+      - --cache=25%
+      - --max-sql-memory=25%

@@ -31,27 +31,27 @@ download_manifest() {
 # 01-wrong-way: Why Deployments don't work for CockroachDB
 download_manifest "01-wrong-way/crdb-deployment.yaml"
 
-# 02-discovery: Headless service and DNS discovery
+# 02-discovery: Headless service and DNS discovery (manual Pods + PVCs)
 download_manifest "02-discovery/crdb-headless-svc.yaml"
-download_manifest "02-discovery/crdb-statefulset-manual.yaml"
+download_manifest "02-discovery/crdb-manual-pods.yaml"
 
 # 03-storage: PVCs and StorageClasses
 download_manifest "03-storage/storageclass.yaml"
 download_manifest "03-storage/crdb-pvc.yaml"
 
-# 04-operator: CrdbCluster CRD manifests
-download_manifest "04-operator/crdbcluster.yaml"
-download_manifest "04-operator/crdbcluster-6node.yaml"
+# 04-operator: Helm values.yaml files (replaces old CrdbCluster CRD manifests)
+download_manifest "04-operator/values.yaml"
+download_manifest "04-operator/values-6node.yaml"
 
 # 05-security: TLS, NetworkPolicies, secure client
 download_manifest "05-security/network-policy.yaml"
 download_manifest "05-security/client-pod-secure.yaml"
 
-# 06-multi-region: Multi-locality cluster
-download_manifest "06-multi-region/crdbcluster-multi-locality.yaml"
+# 06-multi-region: Multi-region Helm values
+download_manifest "06-multi-region/values-multi-region.yaml"
 
-# 07-performance: Resource-tuned cluster
-download_manifest "07-performance/crdbcluster-resources.yaml"
+# 07-performance: Resource-tuned Helm values
+download_manifest "07-performance/values-resources.yaml"
 
 # 08-monitoring: Prometheus, Grafana, backup
 download_manifest "08-monitoring/service-monitor.yaml"

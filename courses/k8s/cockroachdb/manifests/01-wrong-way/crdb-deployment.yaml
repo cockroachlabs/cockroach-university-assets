@@ -1,5 +1,5 @@
 # WARNING: This is intentionally WRONG - CockroachDB should NOT use a Deployment.
-# This manifest exists to demonstrate why StatefulSets (or the Operator) are required.
+# This manifest exists to demonstrate why the CockroachDB Operator is required.
 #
 # Problems with Deployments for CockroachDB:
 #   1. No stable network identity - pods get random names (crdb-7f8b9-xyz)
