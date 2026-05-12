@@ -2,9 +2,9 @@
 set -euxo pipefail
 
 # Deploy a CockroachDB SQL client pod with TLS certificates
-# Uses the new operator Secret names:
-#   - crdb-cockroachdb-ca-secret     (CA certificate)
-#   - crdb-cockroachdb-client-secret (root client cert + key)
+# Uses the selfSigner-generated resources:
+#   - cockroachdb-ca-secret-crt   (ConfigMap with CA certificate)
+#   - cockroachdb-client-secret   (Secret with root client cert + key)
 #
 # Usage: ./03-crdb-client.sh [namespace]
 
@@ -16,9 +16,13 @@ echo "=========================================="
 
 # Wait for the client Secret to exist
 echo "[INFO] Waiting for client certificate Secret..."
-until kubectl get secret crdb-cockroachdb-client-secret -n "${NAMESPACE}" &>/dev/null; do sleep 3; done
+until kubectl get secret cockroachdb-client-secret -n "${NAMESPACE}" &>/dev/null; do sleep 3; done
 
-# Create the client pod that mounts the TLS client secret
+# Wait for the CA ConfigMap to exist
+echo "[INFO] Waiting for CA certificate ConfigMap..."
+until kubectl get configmap cockroachdb-ca-secret-crt -n "${NAMESPACE}" &>/dev/null; do sleep 3; done
+
+# Create the client pod that mounts TLS certs from both ConfigMap and Secret
 echo "[INFO] Creating SQL client pod..."
 cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
 apiVersion: v1
@@ -43,13 +47,13 @@ spec:
     - name: client-certs
       projected:
         sources:
-          - secret:
-              name: crdb-cockroachdb-ca-secret
+          - configMap:
+              name: cockroachdb-ca-secret-crt
               items:
                 - key: ca.crt
                   path: ca.crt
           - secret:
-              name: crdb-cockroachdb-client-secret
+              name: cockroachdb-client-secret
               items:
                 - key: tls.crt
                   path: client.root.crt

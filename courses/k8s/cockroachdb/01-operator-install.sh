@@ -33,12 +33,13 @@ fi
 
 # --- Install the CockroachDB Operator ---
 echo "[INFO] Installing cockroach-operator Helm chart..."
-helm install cockroach-operator "${HELM_CHARTS_DIR}/charts/cockroach-operator" \
-  --namespace cockroach-operator-system --create-namespace
+helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/operator" \
+  --namespace cockroach-operator-system --create-namespace \
+  --set numReplicas=1
 
 # Wait for the operator deployment to be available
 echo "[INFO] Waiting for CockroachDB Operator to be ready..."
-kubectl wait --for=condition=Available deployment -l app.kubernetes.io/name=cockroach-operator \
+kubectl wait --for=condition=Available deployment --all \
   -n cockroach-operator-system --timeout=180s
 
 echo "=========================================="

@@ -10,7 +10,7 @@ CRDB_NODES=${2:-${CRDB_NODES:-3}}
 NAMESPACE=${NAMESPACE:-cockroachdb}
 HELM_CHARTS_DIR=${HELM_CHARTS_DIR:-/tmp/helm-charts}
 REGION_CODE=${REGION_CODE:-us-east1}
-CLOUD_PROVIDER=${CLOUD_PROVIDER:-GKE}
+CLOUD_PROVIDER=${CLOUD_PROVIDER:-k3d}
 
 echo "=========================================="
 echo "[INFO] Deploying CockroachDB ${COCKROACH_VER} (${CRDB_NODES} nodes)"
@@ -56,7 +56,7 @@ cat /tmp/values.yaml
 echo "[INFO] Installing CockroachDB cluster via Helm..."
 set +e
 for attempt in $(seq 1 30); do
-    if helm install cockroachdb "${HELM_CHARTS_DIR}/charts/cockroachdb" \
+    if helm install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
       -f /tmp/values.yaml 2>&1; then
         echo "[INFO] Helm install succeeded"
