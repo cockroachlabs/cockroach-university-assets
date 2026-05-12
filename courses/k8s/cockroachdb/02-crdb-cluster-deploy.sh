@@ -56,17 +56,31 @@ cockroachdb:
         cloudProvider: ${CLOUD_PROVIDER}
     podTemplate:
       spec:
+        containers:
+          - name: cockroachdb
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "2Gi"
+              limits:
+                cpu: "2"
+                memory: "4Gi"
         topologySpreadConstraints:
           - maxSkew: 1
             topologyKey: topology.kubernetes.io/zone
             whenUnsatisfiable: ScheduleAnyway
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "2Gi"
-          limits:
-            cpu: "2"
-            memory: "4Gi"
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - cockroachdb
+                  topologyKey: kubernetes.io/hostname
     additionalArgs:
       - --cache=25%
       - --max-sql-memory=25%
