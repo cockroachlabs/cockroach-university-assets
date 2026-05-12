@@ -59,9 +59,30 @@ helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/op
   --set numReplicas=1
 
 # Wait for the operator deployment to be available
-echo "[INFO] Waiting for CockroachDB Operator to be ready..."
+echo "[INFO] Waiting for CockroachDB Operator deployment to be available..."
 kubectl wait --for=condition=Available deployment --all \
   -n cockroach-operator-system --timeout=180s
+
+# The Deployment Available condition passes before the pod is fully Ready
+# (e.g., still pulling images). The operator registers the CrdbCluster CRD
+# at startup, so downstream scripts need the pod to be actually running.
+echo "[INFO] Waiting for operator pod to be ready..."
+kubectl wait --for=condition=Ready pods -l app=cockroach-operator \
+  -n cockroach-operator-system --timeout=300s
+
+# Verify the CRD is registered (the operator registers it at startup)
+echo "[INFO] Waiting for CrdbCluster CRD to be registered..."
+for crd_attempt in $(seq 1 40); do
+    if kubectl get crd crdbclusters.crdb.cockroachlabs.com &>/dev/null; then
+        echo "[INFO] CrdbCluster CRD is available"
+        break
+    fi
+    if [ "$crd_attempt" -eq 40 ]; then
+        echo "[ERROR] CrdbCluster CRD not registered after 120s"
+        exit 1
+    fi
+    sleep 3
+done
 
 echo "=========================================="
 echo "[INFO] CockroachDB Operator installed successfully"

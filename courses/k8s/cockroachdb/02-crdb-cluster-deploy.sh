@@ -106,9 +106,32 @@ IMAGES=(
 echo "[INFO] Pre-pulling ${#IMAGES[@]} container images..."
 for img in "${IMAGES[@]}"; do
     echo "[INFO]   Pulling $img"
-    crictl pull "$img" 2>/dev/null || ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images pull "$img" 2>/dev/null || true
+    if crictl pull "$img" 2>&1; then
+        echo "[INFO]   ✓ Pulled via crictl: $img"
+    elif ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images pull "$img" 2>&1; then
+        echo "[INFO]   ✓ Pulled via ctr: $img"
+    else
+        echo "[WARN]   Could not pre-pull $img (will be pulled on demand)"
+    fi
 done
 echo "[INFO] Image pre-pull complete"
+
+# Verify the CrdbCluster CRD exists (registered by the operator at startup).
+# If 01-operator-install.sh already waited, this should be instant.
+echo "[INFO] Verifying CrdbCluster CRD is available..."
+for i in $(seq 1 60); do
+    if kubectl get crd crdbclusters.crdb.cockroachlabs.com &>/dev/null; then
+        echo "[INFO] CrdbCluster CRD confirmed"
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "[ERROR] CrdbCluster CRD not found after 180s. Is the operator running?"
+        kubectl get pods -n cockroach-operator-system
+        exit 1
+    fi
+    echo "[INFO] Waiting for CrdbCluster CRD (attempt $i/60)..."
+    sleep 3
+done
 
 # Install the CockroachDB cluster via Helm
 # Uses upgrade --install for idempotent retries (plain "helm install" fails
