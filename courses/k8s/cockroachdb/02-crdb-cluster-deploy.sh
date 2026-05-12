@@ -56,6 +56,10 @@ cockroachdb:
         cloudProvider: ${CLOUD_PROVIDER}
     podTemplate:
       spec:
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
         resources:
           requests:
             cpu: "500m"
@@ -91,9 +95,27 @@ set -e
 # Wait for all CockroachDB pods to be ready
 echo "[INFO] Waiting for CockroachDB pods to be created..."
 until kubectl get pods -l app.kubernetes.io/name=cockroachdb -n "${NAMESPACE}" 2>/dev/null | grep -q cockroachdb; do sleep 3; done
+
 echo "[INFO] Waiting for CockroachDB pods to be ready (this may take a few minutes)..."
-kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=cockroachdb \
-  -n "${NAMESPACE}" --timeout=600s
+# Retry the wait — on single-node K3s, cluster formation can be slow under resource pressure.
+# The operator initializes pods sequentially (certs, init, join) so later pods take longer.
+set +e
+for wait_attempt in $(seq 1 3); do
+    if kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=cockroachdb \
+      -n "${NAMESPACE}" --timeout=300s 2>&1; then
+        echo "[INFO] All CockroachDB pods are ready"
+        break
+    fi
+    echo "[INFO] Not all pods ready yet (attempt $wait_attempt/3), current status:"
+    kubectl get pods -n "${NAMESPACE}" -l app.kubernetes.io/name=cockroachdb
+    if [ "$wait_attempt" -eq 3 ]; then
+        echo "[ERROR] CockroachDB pods did not become ready within 900s"
+        kubectl describe pods -n "${NAMESPACE}" -l app.kubernetes.io/name=cockroachdb | tail -30
+        exit 1
+    fi
+    sleep 10
+done
+set -e
 
 echo "=========================================="
 echo "[INFO] CockroachDB cluster deployed successfully"
