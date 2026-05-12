@@ -25,6 +25,16 @@ echo "=========================================="
 echo "[INFO] Deploying CockroachDB ${COCKROACH_VER} (${CRDB_NODES} nodes)"
 echo "=========================================="
 
+# Label K8s nodes with topology labels so the operator can map the region.
+# Cloud providers (GKE/EKS/AKS) set these automatically, but K3s does not.
+echo "[INFO] Labeling nodes with topology region=${REGION_CODE}..."
+for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
+    kubectl label node "$node" \
+        topology.kubernetes.io/region="${REGION_CODE}" \
+        topology.kubernetes.io/zone="${REGION_CODE}-a" \
+        --overwrite
+done
+
 # Generate values.yaml
 cat <<EOF > /tmp/values.yaml
 cockroachdb:
@@ -62,10 +72,12 @@ echo "[INFO] Generated values.yaml:"
 cat /tmp/values.yaml
 
 # Install the CockroachDB cluster via Helm
+# Uses upgrade --install for idempotent retries (plain "helm install" fails
+# with "cannot re-use a name" if a previous attempt left a failed release).
 echo "[INFO] Installing CockroachDB cluster via Helm..."
 set +e
 for attempt in $(seq 1 30); do
-    if helm install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
+    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
       -f /tmp/values.yaml 2>&1; then
         echo "[INFO] Helm install succeeded"
