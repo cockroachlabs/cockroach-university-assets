@@ -16,7 +16,14 @@ sleep 10
 # Set kubeconfig for current session
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-# Add kubeconfig to bashrc for persistence
+# Create standard kubeconfig symlink so all tools (helm, kubectl, etc.)
+# find the kubeconfig without needing the KUBECONFIG env var.
+# This is critical because setup scripts run as subprocesses — env vars
+# set here don't propagate to subsequent scripts.
+mkdir -p ~/.kube
+ln -sf /etc/rancher/k3s/k3s.yaml ~/.kube/config
+
+# Add kubeconfig to bashrc for interactive sessions
 if ! grep -q "KUBECONFIG=/etc/rancher/k3s/k3s.yaml" ~/.bashrc; then
     echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc
 fi

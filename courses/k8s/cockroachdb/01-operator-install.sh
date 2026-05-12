@@ -11,9 +11,30 @@ set -euxo pipefail
 
 HELM_CHARTS_DIR=${HELM_CHARTS_DIR:-/tmp/helm-charts}
 
+# Ensure KUBECONFIG is set (may not be inherited from parent process)
+if [ -z "${KUBECONFIG:-}" ]; then
+    if [ -f /etc/rancher/k3s/k3s.yaml ]; then
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    elif [ -f ~/.kube/config ]; then
+        export KUBECONFIG=~/.kube/config
+    fi
+fi
+
 echo "=========================================="
 echo "[INFO] Installing CockroachDB Operator (Preview)"
 echo "=========================================="
+
+# Wait for Kubernetes API to be reachable
+echo "[INFO] Waiting for Kubernetes API..."
+for i in $(seq 1 30); do
+    if kubectl cluster-info &>/dev/null; then
+        echo "[INFO] Kubernetes API is ready."
+        break
+    fi
+    echo "[INFO] Attempt $i/30 - API not ready, waiting 5s..."
+    sleep 5
+done
+kubectl cluster-info || { echo "[ERROR] Kubernetes API unreachable after 150s"; exit 1; }
 
 # --- Install Helm if not present ---
 if ! command -v helm &>/dev/null; then

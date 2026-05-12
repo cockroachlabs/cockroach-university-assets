@@ -12,6 +12,15 @@ HELM_CHARTS_DIR=${HELM_CHARTS_DIR:-/tmp/helm-charts}
 REGION_CODE=${REGION_CODE:-us-east1}
 CLOUD_PROVIDER=${CLOUD_PROVIDER:-k3d}
 
+# Ensure KUBECONFIG is set (may not be inherited from parent process)
+if [ -z "${KUBECONFIG:-}" ]; then
+    if [ -f /etc/rancher/k3s/k3s.yaml ]; then
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    elif [ -f ~/.kube/config ]; then
+        export KUBECONFIG=~/.kube/config
+    fi
+fi
+
 echo "=========================================="
 echo "[INFO] Deploying CockroachDB ${COCKROACH_VER} (${CRDB_NODES} nodes)"
 echo "=========================================="
