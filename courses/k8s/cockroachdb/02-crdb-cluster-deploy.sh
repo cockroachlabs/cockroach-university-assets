@@ -89,6 +89,27 @@ EOF
 echo "[INFO] Generated values.yaml:"
 cat /tmp/values.yaml
 
+# Pre-pull all container images so the Helm pre-install hook (cert self-signer)
+# and CockroachDB pods start immediately instead of waiting on Docker Hub pulls.
+# Without this, the hook can time out on slow/rate-limited connections.
+OPERATOR_TAG=$(kubectl get deployment -n cockroach-operator-system \
+    -o jsonpath='{.items[0].spec.template.spec.containers[0].image}' 2>/dev/null | awk -F: '{print $NF}')
+OPERATOR_TAG=${OPERATOR_TAG:-v1.0.0-rc.1}
+
+IMAGES=(
+    "docker.io/cockroachdb/cockroach:${COCKROACH_VER}"
+    "docker.io/cockroachdb/cockroach-self-signer-cert:1.10"
+    "docker.io/cockroachdb/cockroachdb-init-container:${OPERATOR_TAG}"
+    "docker.io/cockroachdb/cockroachdb-cert-reloader:${OPERATOR_TAG}"
+)
+
+echo "[INFO] Pre-pulling ${#IMAGES[@]} container images..."
+for img in "${IMAGES[@]}"; do
+    echo "[INFO]   Pulling $img"
+    crictl pull "$img" 2>/dev/null || ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images pull "$img" 2>/dev/null || true
+done
+echo "[INFO] Image pre-pull complete"
+
 # Install the CockroachDB cluster via Helm
 # Uses upgrade --install for idempotent retries (plain "helm install" fails
 # with "cannot re-use a name" if a previous attempt left a failed release).
@@ -97,6 +118,7 @@ set +e
 for attempt in $(seq 1 30); do
     if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
+      --timeout 600s \
       -f /tmp/values.yaml 2>&1; then
         echo "[INFO] Helm install succeeded"
         break
