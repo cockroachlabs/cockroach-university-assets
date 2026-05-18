@@ -103,17 +103,19 @@ IMAGES=(
     "docker.io/cockroachdb/cockroachdb-cert-reloader:${OPERATOR_TAG}"
 )
 
-echo "[INFO] Pre-pulling ${#IMAGES[@]} container images..."
+echo "[INFO] Pre-pulling ${#IMAGES[@]} container images in parallel..."
 for img in "${IMAGES[@]}"; do
-    echo "[INFO]   Pulling $img"
-    if crictl pull "$img" 2>&1; then
-        echo "[INFO]   ✓ Pulled via crictl: $img"
-    elif ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images pull "$img" 2>&1; then
-        echo "[INFO]   ✓ Pulled via ctr: $img"
-    else
-        echo "[WARN]   Could not pre-pull $img (will be pulled on demand)"
-    fi
+    (
+        if crictl pull "$img" > /dev/null 2>&1; then
+            echo "[INFO]   ✓ Pulled: $img"
+        elif ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images pull "$img" > /dev/null 2>&1; then
+            echo "[INFO]   ✓ Pulled (ctr): $img"
+        else
+            echo "[WARN]   Could not pre-pull $img (will be pulled on demand)"
+        fi
+    ) &
 done
+wait
 echo "[INFO] Image pre-pull complete"
 
 # Verify the CrdbCluster CRD exists (registered by the operator at startup).
