@@ -25,16 +25,34 @@ cockroachdb:
       - code: "us-east1"
         nodes: 3
         namespace: cockroachdb
-        cloudProvider: GKE
+        cloudProvider: k3d
     podTemplate:
       spec:
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "2Gi"
-          limits:
-            cpu: "2"
-            memory: "4Gi"
+        containers:
+          - name: cockroachdb
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "2Gi"
+              limits:
+                cpu: "2"
+                memory: "4Gi"
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - cockroachdb
+                  topologyKey: kubernetes.io/hostname
     additionalArgs:
       - --cache=25%
       - --max-sql-memory=25%

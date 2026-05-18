@@ -7,12 +7,8 @@
 #   4. Ranges rebalance across all 6 nodes
 #
 # Scale up:
-#   helm upgrade cockroachdb charts/cockroachdb -n cockroachdb --reuse-values \
-#     --set cockroachdb.crdbCluster.regions[0].nodes=6
-#
-# Scale down:
-#   helm upgrade cockroachdb charts/cockroachdb -n cockroachdb --reuse-values \
-#     --set cockroachdb.crdbCluster.regions[0].nodes=3
+#   helm upgrade cockroachdb charts/cockroachdb -n cockroachdb \
+#     -f values-6node.yaml
 cockroachdb:
   crdbCluster:
     image:
@@ -29,16 +25,34 @@ cockroachdb:
       - code: "us-east1"
         nodes: 6
         namespace: cockroachdb
-        cloudProvider: GKE
+        cloudProvider: k3d
     podTemplate:
       spec:
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "2Gi"
-          limits:
-            cpu: "2"
-            memory: "4Gi"
+        containers:
+          - name: cockroachdb
+            resources:
+              requests:
+                cpu: "250m"
+                memory: "1Gi"
+              limits:
+                cpu: "1"
+                memory: "2Gi"
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - cockroachdb
+                  topologyKey: kubernetes.io/hostname
     additionalArgs:
       - --cache=25%
       - --max-sql-memory=25%
