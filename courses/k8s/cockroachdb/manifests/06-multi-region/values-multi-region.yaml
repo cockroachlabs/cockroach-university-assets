@@ -1,26 +1,19 @@
 # Helm values.yaml for locality-aware CockroachDB deployment
 #
-# In production, use regions[] to auto-map locality. The Operator reads
-# regions[].code and passes --locality=region=<code> to each node.
+# The CockroachDB Operator (Preview) maps regions[].code to --locality
+# flags automatically. Each region entry corresponds to a K8s cluster.
 #
-# For this single-node lab, we pass --locality via additionalArgs instead
-# of using regions[], because regions[] triggers a hard pod anti-affinity
-# that prevents multiple pods on the same node.
-#
-# Production multi-region reference (requires one Operator per K8s cluster):
+# In production, a multi-region deployment uses multiple regions:
 #   regions:
 #     - code: "us-east1"
 #       nodes: 3
-#       namespace: cockroachdb
-#       cloudProvider: GKE
 #     - code: "eu-west1"
 #       nodes: 3
-#       namespace: cockroachdb
-#       cloudProvider: GKE
 #     - code: "ap-southeast1"
 #       nodes: 3
-#       namespace: cockroachdb
-#       cloudProvider: GKE
+#
+# For this single-node lab, we deploy one node in a single region to
+# demonstrate locality concepts without multi-cluster infrastructure.
 cockroachdb:
   crdbCluster:
     image:
@@ -33,7 +26,11 @@ cockroachdb:
           resources:
             requests:
               storage: 10Gi
-    nodes: 3
+    regions:
+      - code: "us-east1"
+        nodes: 1
+        namespace: cockroachdb
+        cloudProvider: GKE
     podTemplate:
       spec:
         resources:
@@ -44,7 +41,6 @@ cockroachdb:
             cpu: "2"
             memory: "4Gi"
     additionalArgs:
-      - --locality=region=us-east1,zone=us-east1-b
       - --cache=25%
       - --max-sql-memory=25%
   topologySpreadConstraints:
