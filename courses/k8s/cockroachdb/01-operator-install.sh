@@ -20,6 +20,8 @@ if [ -z "${KUBECONFIG:-}" ]; then
     fi
 fi
 
+REGION_CODE=${REGION_CODE:-us-east1}
+
 echo "=========================================="
 echo "[INFO] Installing CockroachDB Operator (Preview)"
 echo "=========================================="
@@ -35,6 +37,17 @@ for i in $(seq 1 30); do
     sleep 5
 done
 kubectl cluster-info || { echo "[ERROR] Kubernetes API unreachable after 150s"; exit 1; }
+
+# Label K8s nodes with topology labels BEFORE installing the operator.
+# The operator's admission webhook reads node labels at startup to build
+# its valid regions map. Without labels, the webhook rejects all region codes.
+echo "[INFO] Labeling nodes with topology region=${REGION_CODE}..."
+for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
+    kubectl label node "$node" \
+        topology.kubernetes.io/region="${REGION_CODE}" \
+        topology.kubernetes.io/zone="${REGION_CODE}-a" \
+        --overwrite
+done
 
 # --- Install Helm if not present ---
 if ! command -v helm &>/dev/null; then
