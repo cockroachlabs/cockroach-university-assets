@@ -1,16 +1,26 @@
-# Helm values.yaml for multi-region CockroachDB deployment
+# Helm values.yaml for locality-aware CockroachDB deployment
 #
-# The CockroachDB Operator (Preview) maps regions[].code to --locality
-# flags automatically. Each region entry corresponds to a K8s cluster.
+# In production, use regions[] to auto-map locality. The Operator reads
+# regions[].code and passes --locality=region=<code> to each node.
 #
-# Prerequisites for multi-region:
-#   - One operator per K8s cluster/region
-#   - VPC peering between clusters
-#   - CoreDNS forwarding for cross-cluster DNS resolution
-#   - Shared CA certificate across all regions
+# For this single-node lab, we pass --locality via additionalArgs instead
+# of using regions[], because regions[] triggers a hard pod anti-affinity
+# that prevents multiple pods on the same node.
 #
-# For the lab (single K3s node), we simulate a single-region deployment
-# and discuss multi-region concepts using this reference configuration.
+# Production multi-region reference (requires one Operator per K8s cluster):
+#   regions:
+#     - code: "us-east1"
+#       nodes: 3
+#       namespace: cockroachdb
+#       cloudProvider: GKE
+#     - code: "eu-west1"
+#       nodes: 3
+#       namespace: cockroachdb
+#       cloudProvider: GKE
+#     - code: "ap-southeast1"
+#       nodes: 3
+#       namespace: cockroachdb
+#       cloudProvider: GKE
 cockroachdb:
   crdbCluster:
     image:
@@ -23,19 +33,7 @@ cockroachdb:
           resources:
             requests:
               storage: 10Gi
-    regions:
-      - code: "us-east1"
-        nodes: 3
-        namespace: cockroachdb
-        cloudProvider: GKE
-      - code: "eu-west1"
-        nodes: 3
-        namespace: cockroachdb
-        cloudProvider: GKE
-      - code: "ap-southeast1"
-        nodes: 3
-        namespace: cockroachdb
-        cloudProvider: GKE
+    nodes: 3
     podTemplate:
       spec:
         resources:
@@ -46,5 +44,10 @@ cockroachdb:
             cpu: "2"
             memory: "4Gi"
     additionalArgs:
+      - --locality=region=us-east1,zone=us-east1-b
       - --cache=25%
       - --max-sql-memory=25%
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
