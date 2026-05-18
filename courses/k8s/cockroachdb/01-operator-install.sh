@@ -76,9 +76,12 @@ echo "[INFO] Waiting for CockroachDB Operator deployment to be available..."
 kubectl wait --for=condition=Available deployment --all \
   -n cockroach-operator-system --timeout=180s
 
-# The Deployment Available condition passes before the pod is fully Ready
-# (e.g., still pulling images). The operator registers the CrdbCluster CRD
-# at startup, so downstream scripts need the pod to be actually running.
+# The Deployment Available condition can pass before the pod object exists.
+# Wait for at least one pod to appear, then wait for it to be Ready.
+echo "[INFO] Waiting for operator pod to exist..."
+until kubectl get pods -l app=cockroach-operator -n cockroach-operator-system --no-headers 2>/dev/null | grep -q .; do
+    sleep 2
+done
 echo "[INFO] Waiting for operator pod to be ready..."
 kubectl wait --for=condition=Ready pods -l app=cockroach-operator \
   -n cockroach-operator-system --timeout=300s
