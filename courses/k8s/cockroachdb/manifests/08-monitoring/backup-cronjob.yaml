@@ -45,12 +45,12 @@ spec:
               projected:
                 sources:
                   - secret:
-                      name: crdb-cockroachdb-ca-secret
+                      name: cockroachdb-ca-secret
                       items:
                         - key: ca.crt
                           path: ca.crt
                   - secret:
-                      name: crdb-cockroachdb-client-secret
+                      name: cockroachdb-client-secret
                       items:
                         - key: tls.crt
                           path: client.root.crt
