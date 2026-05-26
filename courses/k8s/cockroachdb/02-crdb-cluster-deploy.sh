@@ -98,9 +98,9 @@ OPERATOR_TAG=${OPERATOR_TAG:-v1.0.0-rc.1}
 
 IMAGES=(
     "us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:${COCKROACH_VER}"
-    "docker.io/cockroachdb/cockroach-self-signer-cert:1.10"
-    "docker.io/cockroachdb/cockroachdb-init-container:${OPERATOR_TAG}"
-    "docker.io/cockroachdb/cockroachdb-cert-reloader:${OPERATOR_TAG}"
+    "us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach-self-signer-cert:1.10"
+    "us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroachdb-init-container:${OPERATOR_TAG}"
+    "us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroachdb-cert-reloader:${OPERATOR_TAG}"
 )
 
 echo "[INFO] Pre-pulling ${#IMAGES[@]} container images in parallel..."
