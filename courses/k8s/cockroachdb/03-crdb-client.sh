@@ -34,7 +34,7 @@ metadata:
 spec:
   containers:
     - name: cockroachdb-client
-      image: cockroachdb/cockroach:v26.1.3
+      image: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.1.3
       command:
         - sleep
         - "infinity"

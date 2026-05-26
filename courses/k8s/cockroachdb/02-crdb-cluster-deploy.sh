@@ -40,7 +40,7 @@ cat <<EOF > /tmp/values.yaml
 cockroachdb:
   crdbCluster:
     image:
-      name: cockroachdb/cockroach:${COCKROACH_VER}
+      name: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:${COCKROACH_VER}
     dataStore:
       volumeClaimTemplate:
         spec:
@@ -97,7 +97,7 @@ OPERATOR_TAG=$(kubectl get deployment -n cockroach-operator-system \
 OPERATOR_TAG=${OPERATOR_TAG:-v1.0.0-rc.1}
 
 IMAGES=(
-    "docker.io/cockroachdb/cockroach:${COCKROACH_VER}"
+    "us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:${COCKROACH_VER}"
     "docker.io/cockroachdb/cockroach-self-signer-cert:1.10"
     "docker.io/cockroachdb/cockroachdb-init-container:${OPERATOR_TAG}"
     "docker.io/cockroachdb/cockroachdb-cert-reloader:${OPERATOR_TAG}"
