@@ -219,6 +219,9 @@ function ReplicaDistributionDiagram({
             </div>
           ))}
         </div>
+        <div className="text-[7px] text-white/20 mt-1.5 italic leading-relaxed">
+          Per-range view — each range has one leaseholder. Across the cluster, leaseholders are distributed across nodes in the primary region.
+        </div>
       </div>
     </div>
   )
@@ -456,10 +459,10 @@ function RegionCard({
             ) : (
               allowAddRegion && (
                 <button
-                  className="px-2 py-1 rounded text-[9px] font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  className="flex-1 px-2 py-1.5 rounded text-[10px] font-semibold border border-blue-400/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:border-blue-400/60 transition-colors"
                   onClick={onAddToDb}
                 >
-                  Add to DB
+                  + Add to DB
                 </button>
               )
             )}
