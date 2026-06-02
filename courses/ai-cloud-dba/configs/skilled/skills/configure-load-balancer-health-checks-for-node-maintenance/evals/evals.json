@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "What's the difference between /health and /health?ready=1 endpoints?",
+    "expected_output": "/health checks if node process is alive (liveness check) - returns 200 if process running. /health?ready=1 checks if node is ready to accept traffic (readiness check) - returns 200 if ready, 503 if draining. For load balancer health checks, use /health?ready=1 on port 8080 so draining nodes are automatically removed from rotation."
+  },
+  {
+    "prompt": "How do I configure HAProxy health checks for CockroachDB nodes?",
+    "expected_output": "In HAProxy backend configuration: option httpchk GET /health?ready=1, http-check expect status 200, server node1 10.0.1.10:26257 check inter 3000ms fall 2 rise 2 port 8080. This checks /health?ready=1 on port 8080 every 3s, marks down after 2 failures, marks up after 2 successes. During drain, endpoint returns 503 and node is automatically removed."
+  },
+  {
+    "prompt": "Load balancer keeps sending traffic to draining nodes. What's wrong?",
+    "expected_output": "Check: 1) Health check using /health?ready=1 (not just /health). 2) Health check on port 8080 (HTTP port, not 26257). 3) Health check actually configured (option httpchk). 4) Firewall allows health checks to port 8080. 5) server.shutdown.initial_wait >= (health_check_interval × fall_threshold) + buffer. Test manually: curl http://<draining-node>:8080/health?ready=1 (should return 503)."
+  }
+]

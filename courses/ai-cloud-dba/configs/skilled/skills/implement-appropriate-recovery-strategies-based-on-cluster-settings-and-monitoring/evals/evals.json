@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "A node in my 3-node CockroachDB cluster has been down for 3 minutes. What recovery strategy should I use?",
+    "expected_output": "wait for self-healing|node down less than 5 minutes|automatic recovery|not started yet"
+  },
+  {
+    "prompt": "My cluster node ran out of disk space and the ballast file was deleted. What are the immediate recovery steps?",
+    "expected_output": "delete ballast|delete old logs|add disk capacity|resize volume|restart node|recreate ballast"
+  },
+  {
+    "prompt": "How do I validate that recovery was successful after restarting a dead node?",
+    "expected_output": "node status|is_live.*true|under.*replicated|replication.*healthy|query performance|disk space|errors in logs"
+  }
+]

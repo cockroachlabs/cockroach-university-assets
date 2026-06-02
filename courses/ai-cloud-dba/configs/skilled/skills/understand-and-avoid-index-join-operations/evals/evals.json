@@ -1,0 +1,10 @@
+[
+  {
+    "prompt": "I have a query `SELECT id, name, email FROM users WHERE status = 'active'` and EXPLAIN shows 'index join'. I have an index on status. How do I eliminate the index join?",
+    "expected_output": "CREATE INDEX idx_users_status_covering\nON users(status)\nSTORING (name, email);"
+  },
+  {
+    "prompt": "What does 'index join' in EXPLAIN output mean and why is it slow?",
+    "expected_output": "Index join means two lookups per row: (1) scan the secondary index to find matching keys, then (2) look up the full row from the primary index to get non-indexed columns. It's 2x slower than a covering index that includes all needed columns."
+  }
+]

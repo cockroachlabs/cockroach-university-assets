@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "What are the three node liveness states in CockroachDB and what do they mean?",
+    "expected_output": "The three states are: 1) Healthy - node sending regular heartbeats via gossip protocol every ~1 second, 2) Suspect - node has missed heartbeats for 10-60 seconds but not yet declared dead, cluster is waiting to see if it recovers, and 3) Dead - node has been silent for longer than server.time_until_store_dead (default 5 minutes), cluster marks it as dead and begins replica rebalancing. The timeline is: Healthy → Suspect (after missing heartbeats) → Dead (after timeout) → Removed from cluster."
+  },
+  {
+    "prompt": "How do you monitor node liveness and identify suspect or dead nodes?",
+    "expected_output": "Query the crdb_internal.gossip_liveness table: 'SET allow_unsafe_internals = true; SELECT node_id, address, membership, updated_at, now() - updated_at AS staleness FROM crdb_internal.gossip_liveness ORDER BY staleness DESC;' A node is Healthy if staleness < 10 seconds, Suspect if staleness is 10 seconds to 5 minutes, and Dead if staleness > 5 minutes. Set up alerts for suspect nodes (staleness > 30 seconds) and critical alerts for dead nodes (staleness > 5 minutes). Also check crdb_internal.gossip_nodes for is_live status."
+  },
+  {
+    "prompt": "What is the impact of the server.time_until_store_dead setting and what are recommended alert thresholds?",
+    "expected_output": "server.time_until_store_dead (default 5 minutes) controls how long the cluster waits before declaring a node dead. A shorter timeout means faster self-healing but more false positives; longer timeout means fewer false positives but slower recovery. Recommended alert thresholds: Warning at 30 seconds staleness (suspect state), Critical at 5 minutes (dead state), and Emergency if more than 1 node dead (quorum risk on 3-node cluster). For a 3-node cluster, 1 dead node is tolerable (2/3 quorum), but 2 dead nodes cause cluster unavailability."
+  }
+]

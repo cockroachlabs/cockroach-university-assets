@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "What output format of 'cockroach node status' is best for scripting and why?",
+    "expected_output": "CSV|--format=csv|easier to parse|grep|awk|cut|scripting"
+  },
+  {
+    "prompt": "Write a bash command to count how many dead nodes are in the cluster using cockroach node status.",
+    "expected_output": "cockroach node status.*--format=csv|grep.*false|wc -l|tail -n \\+2"
+  },
+  {
+    "prompt": "How do I filter cockroach node status output to show only node 3?",
+    "expected_output": "grep.*\\^  3|--format=csv.*grep.*\\^3,|filter.*node.*3"
+  }
+]

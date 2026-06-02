@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "How do you monitor the progress of a node decommission and track replica movement?",
+    "expected_output": "Use 'cockroach node status --decommission' to see membership status (active → decommissioning → decommissioned) and replica count. For detailed tracking, query crdb_internal.ranges: 'SET allow_unsafe_internals = true; SELECT count(*) FROM crdb_internal.ranges WHERE array_position(replicas, <node_id>) IS NOT NULL;' This shows remaining replicas on the decommissioning node - it should decrease to 0. Monitor every 60 seconds to track progress. Also check leaseholders separately: 'SELECT count(*) FROM crdb_internal.ranges WHERE lease_holder = <node_id>;' which should drop to 0 quickly."
+  },
+  {
+    "prompt": "What are the three phases of node decommissioning and how long does each take?",
+    "expected_output": "Phase 1 - Draining (30-120 seconds): Connections close gracefully, no new SQL connections accepted, leaseholders transferred away. Phase 2 - Decommissioning (minutes to hours): Replicas transferred to other nodes via Raft snapshots, duration depends on data volume (10GB ~5-10 min, 100GB ~30-60 min, 1TB ~5-10 hours). Phase 3 - Decommissioned (instant): All replicas successfully moved, node marked decommissioned, safe to shut down. Leaseholders transfer first (fast metadata) before replicas (slow data movement)."
+  },
+  {
+    "prompt": "What are common reasons a decommission gets stuck and how do you fix them?",
+    "expected_output": "Common causes: 1) Insufficient nodes for replication factor - if you have 3x replication and only 3 nodes, you cannot decommission (need at least 4 nodes). Check with 'SELECT count(*) FROM crdb_internal.gossip_liveness WHERE membership = active'. 2) Zone config constraints cannot be satisfied - constraints like '+region=us-east' may prevent replica placement if no other nodes meet criteria. 3) Cluster overloaded - high CPU/disk I/O prevents fast transfers. Solutions: Add new node before decommissioning, relax zone constraints, or increase kv.snapshot_rebalance.max_rate temporarily. Cancel with 'cockroach node recommission <node_id>' if needed."
+  }
+]
