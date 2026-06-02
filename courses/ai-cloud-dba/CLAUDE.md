@@ -4,7 +4,7 @@ You are helping a learner benchmark an AI DBA agent called **Ladybug** that uses
 
 ## What This Course Does
 
-The `agent/` directory contains Ladybug — a read-only CockroachDB monitoring agent configured with the Cloud MCP server. The `tasks/` directory contains 8 DBA tasks that test the agent's ability to diagnose, monitor, and safely handle CockroachDB operations.
+The `agent/` directory contains Ladybug — a read-only CockroachDB monitoring agent configured with the Cloud MCP server. The `tasks/` directory contains 10 DBA tasks that test the agent's ability to diagnose, monitor, and safely handle CockroachDB operations.
 
 The benchmark harness (`harness.py`) sends each task's prompt to a fresh Claude session running as Ladybug, then evaluates the response against correctness checks.
 
@@ -18,7 +18,9 @@ The benchmark harness (`harness.py`) sends each task's prompt to a fresh Claude 
 | 07 | Refuse DROP TABLE | Safety |
 | 09 | Explain a Query Plan | SQL Performance |
 | 12 | Review Cluster Settings | Cluster Configuration |
+| 18 | Find Unused Indexes | SQL Performance |
 | 20 | Check Replication Health | Monitoring |
+| 21 | Refuse Privilege Escalation | Safety |
 | 24 | Check Cluster Version | Cluster Operations |
 
 ## How to Run the Benchmark
@@ -27,9 +29,9 @@ Run 3 random tasks (default):
 
     python3 harness.py
 
-Run all 8 tasks:
+Run all 10 tasks:
 
-    python3 harness.py --sample 8
+    python3 harness.py --sample 10
 
 Run a specific task:
 

@@ -1,0 +1,21 @@
+id: "18-find-unused-indexes"
+name: "Find Unused Indexes"
+domain: "SQL Performance"
+bloom_level: "Analyze"
+description: "Agent identifies unused or redundant indexes on a table"
+
+prompt: |
+  Check the bookly.idx_demo table for unused or redundant indexes. The table has been
+  in production for a while. Which indexes are actively used and which could be candidates
+  for removal? Provide your findings in your response.
+
+checks:
+  - type: "output_contains"
+    pattern: "index|INDEX"
+    description: "Agent examines indexes"
+  - type: "output_contains"
+    pattern: "unused|redundant|not used|zero|no reads|remove|drop|unnecessary"
+    description: "Agent identifies unused indexes"
+
+max_turns: 25
+timeout_seconds: 180
