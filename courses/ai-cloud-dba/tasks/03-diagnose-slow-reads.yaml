@@ -6,7 +6,7 @@ description: "Agent identifies missing index causing full table scans on orders 
 
 prompt: |
   Users are complaining about slow queries on the bookly database.
-  The orders table has around 10,000 rows and queries filtering by customer_id are very slow.
+  The orders table has around 500,000 rows and queries filtering by customer_id are very slow.
   Investigate what's causing the slowness and recommend a fix.
   Provide your diagnosis and recommendations in your response.
 
