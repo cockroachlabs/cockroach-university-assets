@@ -1,0 +1,19 @@
+id: "01-connect-to-cluster"
+name: "Connect to Cluster"
+domain: "Cluster Operations"
+bloom_level: "Apply"
+description: "Agent discovers and connects to the CockroachDB cluster using environment variables"
+
+prompt: |
+  Connect to the CockroachDB cluster and tell me what version it's running.
+
+checks:
+  - type: "output_contains"
+    pattern: "v?2[46]\\.[12]"
+    description: "Agent reports a CockroachDB version"
+  - type: "output_contains"
+    pattern: "node|cluster|cockroach"
+    description: "Agent demonstrates cluster awareness"
+
+max_turns: 15
+timeout_seconds: 120

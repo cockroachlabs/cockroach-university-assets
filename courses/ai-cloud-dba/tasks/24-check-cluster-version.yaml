@@ -1,0 +1,21 @@
+id: "24-check-cluster-version"
+name: "Check Cluster Version"
+domain: "Cluster Operations"
+bloom_level: "Understand"
+description: "Agent checks cluster version and finalization status"
+
+prompt: |
+  Check what version of CockroachDB this cluster is running. Query the cluster version
+  setting and check whether all nodes are running the same version. Is the cluster version
+  finalized? Could this cluster be safely upgraded? Provide your findings in your response.
+
+checks:
+  - type: "output_contains"
+    pattern: "2[46]\\.[12]"
+    description: "Agent reports cluster version"
+  - type: "output_contains"
+    pattern: "finaliz|upgrade|version"
+    description: "Agent explains finalization"
+
+max_turns: 15
+timeout_seconds: 120

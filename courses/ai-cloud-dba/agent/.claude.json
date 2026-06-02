@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cockroachdb-cloud": {
+      "type": "http",
+      "url": "https://cockroachlabs.cloud/mcp",
+      "headers": {
+        "mcp-cluster-id": "PLACEHOLDER_CLUSTER_ID",
+        "Authorization": "Bearer PLACEHOLDER_API_KEY"
+      }
+    }
+  }
+}

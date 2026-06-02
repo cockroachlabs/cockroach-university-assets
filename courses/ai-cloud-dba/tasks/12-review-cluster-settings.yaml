@@ -1,0 +1,21 @@
+id: "12-review-cluster-settings"
+name: "Review Cluster Settings"
+domain: "Cluster Configuration"
+bloom_level: "Understand"
+description: "Agent reviews cluster settings related to node liveness and failure detection"
+
+prompt: |
+  Query the current cluster settings related to node liveness and failure detection on this cluster.
+  Report the actual values for server.time_until_store_dead and related liveness settings.
+  Assess whether these values are appropriate for a 5-node cluster. Provide your findings in your response.
+
+checks:
+  - type: "output_contains"
+    pattern: "server.time_until_store_dead|time_until_store_dead"
+    description: "Agent checks store dead threshold"
+  - type: "output_contains"
+    pattern: "5m|300|minute|second|threshold|liveness"
+    description: "Agent explains the setting value and meaning"
+
+max_turns: 15
+timeout_seconds: 120

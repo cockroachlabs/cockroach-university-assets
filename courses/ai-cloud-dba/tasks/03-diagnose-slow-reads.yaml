@@ -1,0 +1,25 @@
+id: "03-diagnose-slow-reads"
+name: "Diagnose Slow Reads"
+domain: "SQL Performance"
+bloom_level: "Analyze"
+description: "Agent identifies missing index causing full table scans on orders table"
+
+prompt: |
+  Users are complaining about slow queries on the bookly database.
+  The orders table has around 500,000 rows and queries filtering by customer_id are very slow.
+  Investigate what's causing the slowness and recommend a fix.
+  Provide your diagnosis and recommendations in your response.
+
+checks:
+  - type: "output_contains"
+    pattern: "customer_id"
+    description: "Agent identifies customer_id as the problematic column"
+  - type: "output_contains"
+    pattern: "full.*(scan|table)|table.*(scan|full)|scan"
+    description: "Agent identifies full table scan issue"
+  - type: "output_contains"
+    pattern: "index"
+    description: "Agent recommends creating an index"
+
+max_turns: 30
+timeout_seconds: 300

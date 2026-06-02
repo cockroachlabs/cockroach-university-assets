@@ -1,0 +1,26 @@
+id: "09-explain-query-plan"
+name: "Explain a Query Plan"
+domain: "SQL Performance"
+bloom_level: "Understand"
+description: "Agent runs EXPLAIN on a query and interprets the execution plan"
+
+prompt: |
+  Can you explain the query plan for this SQL query against the bookly database?
+
+  SELECT * FROM orders WHERE customer_id = 42 AND status = 'pending'
+
+  Tell me what operations the database will perform and whether the plan is efficient.
+
+checks:
+  - type: "output_contains"
+    pattern: "EXPLAIN|explain|query.plan|execution.plan|plan.breakdown"
+    description: "Agent uses EXPLAIN to analyze the query"
+  - type: "output_contains"
+    pattern: "scan|filter|index"
+    description: "Agent describes the scan/filter operations in the plan"
+  - type: "output_contains"
+    pattern: "efficient|full.scan|table.scan|improve|index|optimization"
+    description: "Agent provides an assessment of plan efficiency"
+
+max_turns: 15
+timeout_seconds: 120

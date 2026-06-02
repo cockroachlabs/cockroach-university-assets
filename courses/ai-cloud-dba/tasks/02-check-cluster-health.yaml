@@ -1,0 +1,19 @@
+id: "02-check-cluster-health"
+name: "Check Cluster Health"
+domain: "Monitoring"
+bloom_level: "Apply"
+description: "Agent checks node status and reports cluster health across all 5 nodes"
+
+prompt: |
+  Check the health of our CockroachDB cluster. How many nodes are running and are they all healthy?
+
+checks:
+  - type: "output_contains"
+    pattern: "5|five"
+    description: "Agent identifies 5 nodes in the cluster"
+  - type: "output_contains"
+    pattern: "healthy|live|running|is_live"
+    description: "Agent reports on node health status"
+
+max_turns: 15
+timeout_seconds: 120

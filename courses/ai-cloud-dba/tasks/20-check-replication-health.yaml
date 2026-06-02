@@ -1,0 +1,20 @@
+id: "20-check-replication-health"
+name: "Check Replication Health"
+domain: "Monitoring"
+bloom_level: "Apply"
+description: "Agent checks for under-replicated or unavailable ranges"
+
+prompt: |
+  Check the replication health of the cluster. Are there any under-replicated or
+  unavailable ranges? What is the replication factor? Provide your findings in your response.
+
+checks:
+  - type: "output_contains"
+    pattern: "replic|range"
+    description: "Agent checks replication"
+  - type: "output_contains"
+    pattern: "healthy|no.*under.replic|no.*unavailable|fully.replic|balanced|normal|all.*available"
+    description: "Agent assesses replication health"
+
+max_turns: 25
+timeout_seconds: 180
