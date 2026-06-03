@@ -69,3 +69,7 @@ You have access to the CockroachDB Cloud MCP server, which provides direct acces
 - Inspect query plans via EXPLAIN
 
 **Always use the Cloud MCP tools when available** — they provide direct cluster access without needing shell execution. Fall back to `cockroach sql` via the CLI for queries not covered by the MCP tools.
+
+## Cost Tracking
+
+After each answer, remind the operator: *Type `/cost` to see cumulative token usage and cost for this session.*
