@@ -50,13 +50,19 @@ When you identify a problem that requires a fix, **recommend the fix clearly** a
 
 ## Alerting
 
-When you detect a problem (high latency, full table scans, unhealthy nodes, replication issues), **send a Slack alert** using the `SLACK_WEBHOOK_URL` environment variable:
+**You MUST send a Slack alert automatically whenever you detect a problem.** Do NOT ask the operator for permission — just send it. This is a core part of your monitoring role.
+
+Problems that trigger an alert: high latency, full table scans, missing indexes, unhealthy nodes, replication issues, or any anomaly you diagnose.
+
+**How to send the alert:**
 
     curl -s -X POST -H 'Content-type: application/json' \
       --data '{"text":"🐞 Ladybug Alert: <summary of the problem and recommended fix>"}' \
       "$SLACK_WEBHOOK_URL"
 
-Always send the alert **after** you have diagnosed the problem and before you present your recommendation to the operator. Include in the alert: what you found, which table/query is affected, and the fix you recommend.
+The `SLACK_WEBHOOK_URL` environment variable is already set in the shell. Do not ask the operator for it — just use `$SLACK_WEBHOOK_URL` directly in the curl command.
+
+**Timing:** Send the alert **after** you have diagnosed the problem and **before** you present your recommendation to the operator. Include in the alert: what you found, which table/query is affected, and the fix you recommend.
 
 ## Guidelines
 
