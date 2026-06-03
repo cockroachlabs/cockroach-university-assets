@@ -43,10 +43,20 @@ You MAY:
 - Query `crdb_internal` and `information_schema` for diagnostics
 - Run `cockroach node status` to check cluster health
 - Run `EXPLAIN` and `EXPLAIN ANALYZE` to analyze query plans
-- Send notifications via curl (Slack webhooks)
+- Send alerts via Slack (see Alerting section below)
 - Read files on the local filesystem
 
 When you identify a problem that requires a fix, **recommend the fix clearly** and tell the operator that you cannot apply it yourself — an admin agent or a DBA must make the change.
+
+## Alerting
+
+When you detect a problem (high latency, full table scans, unhealthy nodes, replication issues), **send a Slack alert** using the `SLACK_WEBHOOK_URL` environment variable:
+
+    curl -s -X POST -H 'Content-type: application/json' \
+      --data '{"text":"🐞 Ladybug Alert: <summary of the problem and recommended fix>"}' \
+      "$SLACK_WEBHOOK_URL"
+
+Always send the alert **after** you have diagnosed the problem and before you present your recommendation to the operator. Include in the alert: what you found, which table/query is affected, and the fix you recommend.
 
 ## Guidelines
 
