@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: cockroachdb
-          image: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.1.3
+          image: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.2.3
           command:
             - cockroach
             - start

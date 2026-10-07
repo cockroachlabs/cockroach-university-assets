@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Install the CockroachDB Operator (Preview) using Helm
+# Install the CockroachDB Operator (GA) using Helm
 # Usage: ./01-operator-install.sh
 #
 # This script:
@@ -23,7 +23,7 @@ fi
 REGION_CODE=${REGION_CODE:-us-east1}
 
 echo "=========================================="
-echo "[INFO] Installing CockroachDB Operator (Preview)"
+echo "[INFO] Installing CockroachDB Operator (GA)"
 echo "=========================================="
 
 # Wait for Kubernetes API to be reachable
