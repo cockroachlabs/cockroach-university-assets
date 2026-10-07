@@ -67,7 +67,7 @@ fi
 
 # --- Install the CockroachDB Operator ---
 echo "[INFO] Installing cockroach-operator Helm chart..."
-helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/operator" \
+helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-operator/charts/operator" \
   --namespace cockroach-operator-system --create-namespace \
   --set numReplicas=1
 

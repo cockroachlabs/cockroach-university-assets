@@ -141,7 +141,7 @@ done
 echo "[INFO] Installing CockroachDB cluster via Helm..."
 set +e
 for attempt in $(seq 1 30); do
-    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
+    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-operator/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
       --timeout 600s \
       -f /tmp/values.yaml 2>&1; then
