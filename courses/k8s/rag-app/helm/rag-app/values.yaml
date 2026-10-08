@@ -1,0 +1,70 @@
+# Default values for the rag-app chart.
+replicaCount: 2
+
+image:
+  repository: rag-app
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+# Non-secret configuration -> rendered into a ConfigMap, injected via envFrom.
+config:
+  DB_POOL_MIN: "2"
+  DB_POOL_MAX: "10"
+  EMBED_MODEL: "BAAI/bge-small-en-v1.5"
+  EMBED_DIM: "384"
+  TOP_K: "5"
+  # Leave LLM_API_BASE empty to use the extractive fallback (no API key needed).
+  LLM_API_BASE: ""
+  LLM_MODEL: "gpt-4o-mini"
+
+# Secrets -> rendered into a Secret, injected via envFrom.
+# DB_URL uses sslmode=require (TLS without client-cert verification) so the app
+# needs only a password, not mounted certs.
+secret:
+  DB_URL: "postgresql://rag:ragpassword@cockroachdb-public.cockroachdb:26257/ragdb?sslmode=require"
+  LLM_API_KEY: ""
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+# Probes: liveness checks the process; readiness checks the database dependency.
+probes:
+  liveness:
+    path: /livez
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+terminationGracePeriodSeconds: 30
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  # Default, always-available path: scale on CPU (needs only metrics-server).
+  targetCPUUtilizationPercentage: 60
+  # Production path taught in the course: scale on a custom request-rate metric.
+  # Requires Prometheus + prometheus-adapter to expose the metric to the HPA API.
+  customMetric:
+    enabled: false
+    name: http_requests_per_second
+    averageValue: "10"
+
+# ServiceMonitor for Prometheus scraping of /metrics (needs the Prometheus Operator).
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 15s

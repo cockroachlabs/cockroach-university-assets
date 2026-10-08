@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Deploy a CockroachDB cluster using the CockroachDB Operator (Preview) + Helm
+# Deploy a CockroachDB cluster using the CockroachDB Operator (GA) + Helm
 # Usage: ./02-crdb-cluster-deploy.sh [cockroach-version] [nodes]
-# Default: v26.1.3 with 3 nodes
+# Default: v26.2.3 with 3 nodes
 
-COCKROACH_VER=${1:-${COCKROACH_VER:-v26.1.3}}
+COCKROACH_VER=${1:-${COCKROACH_VER:-v26.2.3}}
 CRDB_NODES=${2:-${CRDB_NODES:-3}}
 NAMESPACE=${NAMESPACE:-cockroachdb}
 HELM_CHARTS_DIR=${HELM_CHARTS_DIR:-/tmp/helm-charts}
@@ -141,7 +141,7 @@ done
 echo "[INFO] Installing CockroachDB cluster via Helm..."
 set +e
 for attempt in $(seq 1 30); do
-    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
+    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-operator/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
       --timeout 600s \
       -f /tmp/values.yaml 2>&1; then

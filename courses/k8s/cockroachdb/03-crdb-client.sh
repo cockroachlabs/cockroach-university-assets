@@ -6,9 +6,12 @@ set -euxo pipefail
 #   - cockroachdb-ca-secret-crt   (ConfigMap with CA certificate)
 #   - cockroachdb-client-secret   (Secret with root client cert + key)
 #
-# Usage: ./03-crdb-client.sh [namespace]
+# Usage: ./03-crdb-client.sh [namespace] [cockroach-version]
+# Default: namespace "cockroachdb", version "v26.2.3"
 
 NAMESPACE=${1:-${NAMESPACE:-cockroachdb}}
+COCKROACH_VER=${2:-${COCKROACH_VER:-v26.2.3}}
+CRDB_IMAGE="us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:${COCKROACH_VER}"
 
 echo "=========================================="
 echo "[INFO] Deploying CockroachDB SQL client pod"
@@ -34,7 +37,7 @@ metadata:
 spec:
   containers:
     - name: cockroachdb-client
-      image: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.1.3
+      image: ${CRDB_IMAGE}
       command:
         - sleep
         - "infinity"

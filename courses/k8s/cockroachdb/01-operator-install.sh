@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Install the CockroachDB Operator (Preview) using Helm
+# Install the CockroachDB Operator (GA) using Helm
 # Usage: ./01-operator-install.sh
 #
 # This script:
@@ -23,7 +23,7 @@ fi
 REGION_CODE=${REGION_CODE:-us-east1}
 
 echo "=========================================="
-echo "[INFO] Installing CockroachDB Operator (Preview)"
+echo "[INFO] Installing CockroachDB Operator (GA)"
 echo "=========================================="
 
 # Wait for Kubernetes API to be reachable
@@ -67,7 +67,7 @@ fi
 
 # --- Install the CockroachDB Operator ---
 echo "[INFO] Installing cockroach-operator Helm chart..."
-helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/operator" \
+helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-operator/charts/operator" \
   --namespace cockroach-operator-system --create-namespace \
   --set numReplicas=1
 
