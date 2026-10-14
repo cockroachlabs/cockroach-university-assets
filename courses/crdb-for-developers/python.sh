@@ -3,22 +3,30 @@ set -euxo pipefail
 
 # Per-language setup for the "CockroachDB for Python Developers" labs.
 # Usage: python.sh [connect|resilient]
-#   connect   -> single-node lab: deploy the first_query starter
-#   resilient -> 3-node lab: seed accounts + deploy the looping app
-# Requires GH_USER / GH_PAT in the environment (Instruqt track variables)
-# while the CockroachDB Python Library is pre-release.
+# Requires GH_USER / GH_PAT in the environment (Instruqt secrets) while the
+# library is pre-release.
 
 LAB=${1:-connect}
 
-DEBIAN_FRONTEND=noninteractive apt -y install python3 python3-pip python3-venv || true
+# The library requires Python >= 3.11; the base image ships 3.10, so install 3.11
+# into a venv and make `python3`/`python` resolve to it for the lab.
+DEBIAN_FRONTEND=noninteractive apt -y install software-properties-common
+add-apt-repository -y ppa:deadsnakes/ppa
+apt -y update
+DEBIAN_FRONTEND=noninteractive apt -y install python3.11 python3.11-venv
+python3.11 -m venv /opt/crdbvenv
+ln -sf /opt/crdbvenv/bin/python /usr/local/bin/python3
+ln -sf /opt/crdbvenv/bin/python /usr/local/bin/python
 
 # --- CockroachDB Python Library (pre-release, strategy B) --------------------
 # PUBLIC-SWAP: after GA, replace the two git installs with:
-#   pip3 install cockroachdb cockroachdb-core
-pip3 install --quiet "psycopg[binary]"
-pip3 install --quiet \
+#   /opt/crdbvenv/bin/pip install cockroachdb cockroachdb-core
+/opt/crdbvenv/bin/pip install --quiet "psycopg[binary]"
+set +x   # do not echo the token into the setup log
+/opt/crdbvenv/bin/pip install --quiet \
   "git+https://${GH_USER}:${GH_PAT}@github.com/felipeg48/cockroachdb-python-library.git#subdirectory=packages/cockroachdb" \
   "git+https://${GH_USER}:${GH_PAT}@github.com/felipeg48/cockroachdb-python-library.git#subdirectory=packages/cockroachdb-core"
+set -x
 
 mkdir -p /root/app
 

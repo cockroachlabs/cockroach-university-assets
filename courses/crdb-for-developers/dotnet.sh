@@ -21,8 +21,10 @@ mkdir -p /root/app && cd /root/app
 
 # --- Strategy B: NuGet via GitHub Packages ----------------------------------
 # PUBLIC-SWAP: after GA, drop the github source and use the public nuget.org feed.
+set +x   # do not echo the token into the setup log
 dotnet nuget add source "https://nuget.pkg.github.com/felipeg48/index.json" \
   -n github -u "${GH_USER}" -p "${GH_PAT}" --store-password-in-clear-text || true
+set -x
 dotnet add package CockroachDB.DotNet.Core || true
 dotnet add package Npgsql || true
 
