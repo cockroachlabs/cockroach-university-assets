@@ -27,6 +27,13 @@ grep -q 'GOPRIVATE' ~/.bashrc || echo 'export GOPRIVATE=github.com/felipeg48/*' 
 mkdir -p /root/app && cd /root/app
 [ -f go.mod ] || go mod init crdblab
 
+# Pre-pull the library + pgx into go.mod and the module cache (no `go mod tidy`,
+# which would prune the library from the connect starter that doesn't import it yet).
+set +x   # the git credential rewrite above already injected the token; keep it out of logs
+go get github.com/felipeg48/cockroachdb-go-library || true
+go get github.com/jackc/pgx/v5 || true
+set -x
+
 if [ "$LAB" = "resilient" ]; then
     cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
       "CREATE TABLE IF NOT EXISTS accounts (id INT PRIMARY KEY, balance INT); UPSERT INTO accounts VALUES (1, 1000), (2, 1000);" || true
@@ -80,30 +87,13 @@ else
     cat > /root/app/main.go <<'GO'
 package main
 
-import (
-	"context"
-	"fmt"
-
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo"
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo/pgxadapter"
-)
+import "fmt"
 
 func main() {
-	ctx := context.Background()
-	connStr := "postgresql://root@localhost:26257/defaultdb?sslmode=disable"
-	pool, err := pgxadapter.NewPool(ctx, connStr, []crdbgo.Option{
-		crdbgo.WithMaxRetries(5), crdbgo.WithJitter(true),
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer pool.Close()
-
-	// You'll add your first query here during the challenges.
-	fmt.Println("connected to CockroachDB")
+	// Open a pool with pgxadapter.NewPool during the challenges, then run a query.
+	fmt.Println("TODO: connect to CockroachDB")
 }
 GO
 fi
 
-go mod tidy || true
 echo "[INFO] Go lab assets ready (${LAB})"
