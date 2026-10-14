@@ -15,8 +15,15 @@ add-apt-repository -y ppa:deadsnakes/ppa
 apt -y update
 DEBIAN_FRONTEND=noninteractive apt -y install python3.11 python3.11-venv
 python3.11 -m venv /opt/crdbvenv
-ln -sf /opt/crdbvenv/bin/python /usr/local/bin/python3
-ln -sf /opt/crdbvenv/bin/python /usr/local/bin/python
+# Make `python3`/`python` resolve to the venv (3.11 + the library) everywhere,
+# including non-interactive check/solve scripts. A wrapper (not a symlink) is
+# required — symlink resolution lands on the real python3.11 and bypasses the venv.
+cat > /usr/local/bin/python3 <<'SH'
+#!/bin/sh
+exec /opt/crdbvenv/bin/python "$@"
+SH
+chmod +x /usr/local/bin/python3
+cp /usr/local/bin/python3 /usr/local/bin/python
 
 # --- CockroachDB Python Library (pre-release, strategy B) --------------------
 # PUBLIC-SWAP: after GA, replace the two git installs with:
