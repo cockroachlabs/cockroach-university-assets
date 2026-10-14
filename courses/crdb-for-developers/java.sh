@@ -14,6 +14,7 @@ DEBIAN_FRONTEND=noninteractive apt -y install maven || true
 # --- Strategy B: Maven via GitHub Packages ----------------------------------
 # PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
 mkdir -p ~/.m2
+set +x   # do not echo the token into the setup log
 cat > ~/.m2/settings.xml <<EOF
 <settings>
   <servers>
@@ -25,6 +26,7 @@ cat > ~/.m2/settings.xml <<EOF
   </servers>
 </settings>
 EOF
+set -x
 
 mkdir -p /root/app/src/main/java && cd /root/app
 cat > /root/app/pom.xml <<'XML'

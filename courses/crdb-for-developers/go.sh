@@ -18,7 +18,9 @@ grep -q '/usr/local/go/bin' ~/.bashrc || echo 'export PATH=$PATH:/usr/local/go/b
 
 # --- Strategy B: private module fetch via git + PAT --------------------------
 # PUBLIC-SWAP: after GA, drop the git credential rewrite and GOPRIVATE.
+set +x   # do not echo the token into the setup log
 git config --global url."https://${GH_USER}:${GH_PAT}@github.com/".insteadOf "https://github.com/"
+set -x
 export GOPRIVATE="github.com/felipeg48/*"
 grep -q 'GOPRIVATE' ~/.bashrc || echo 'export GOPRIVATE=github.com/felipeg48/*' >> ~/.bashrc
 
