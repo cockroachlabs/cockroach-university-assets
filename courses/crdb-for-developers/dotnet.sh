@@ -86,17 +86,16 @@ while (true)
 }
 CS
 else
-    # Skeleton: opens a data source but does NOT use the library and prints no
-    # sentinel, so the Ch1 check (which greps for CRDB_CONNECT_OK) fails until
-    # the learner runs a query through the CockroachDB template.
+    # Skeleton: opens a data source and a connection on startup, so Ch1 ("boot
+    # and connect") passes on a plain run — its check greps "connected to
+    # CockroachDB". The learner adds the first query in Ch2.
     cat > /root/app/Program.cs <<'CS'
 using Npgsql;
 
 var cs = "Host=localhost;Port=26257;Database=defaultdb;Username=root;SSL Mode=Disable;";
 await using var dataSource = NpgsqlDataSource.Create(cs);
-
-// TODO: run your first query during the challenges.
-Console.WriteLine("starter app");
+await using var conn = await dataSource.OpenConnectionAsync();
+Console.WriteLine("connected to CockroachDB");
 CS
 fi
 
