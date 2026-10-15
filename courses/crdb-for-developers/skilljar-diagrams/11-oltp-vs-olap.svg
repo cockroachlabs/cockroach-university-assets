@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#190F33">What CockroachDB Is Built For — And Not</text>
+
+  <!-- Left: good fit -->
+  <rect x="40" y="65" width="390" height="300" rx="10" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="235" y="100" text-anchor="middle" font-size="18" font-weight="bold" fill="#27ae60">Great Fit</text>
+
+  <text x="70" y="140" font-size="14" fill="#190F33">✓ Distributed OLTP — fast, small reads &amp; writes</text>
+  <text x="70" y="175" font-size="14" fill="#190F33">✓ Global, multi-region applications</text>
+  <text x="70" y="210" font-size="14" fill="#190F33">✓ High availability as the default behavior</text>
+  <text x="70" y="245" font-size="14" fill="#190F33">✓ Strong, serializable consistency</text>
+
+  <!-- Right: poor fit -->
+  <rect x="470" y="65" width="390" height="300" rx="10" fill="#F9F8F3" stroke="#e67e22" stroke-width="3"/>
+  <text x="665" y="100" text-anchor="middle" font-size="18" font-weight="bold" fill="#e67e22">Not the Best Fit</text>
+
+  <text x="500" y="140" font-size="14" fill="#190F33">✕ Heavy analytics / OLAP reporting</text>
+  <text x="500" y="175" font-size="14" fill="#190F33">✕ Tiny, single-node, no-growth apps</text>
+  <text x="500" y="210" font-size="14" fill="#190F33">✕ Workloads fine with eventual consistency</text>
+</svg>

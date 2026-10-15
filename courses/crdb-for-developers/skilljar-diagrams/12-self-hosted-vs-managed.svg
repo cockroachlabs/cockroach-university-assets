@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#190F33">Self-Hosted vs. Managed</text>
+
+  <!-- Left: self-hosted -->
+  <rect x="50" y="70" width="360" height="290" rx="10" fill="#F4F2FF" stroke="#3498db" stroke-width="3"/>
+  <rect x="195" y="95" width="70" height="16" fill="#3498db"/>
+  <rect x="195" y="115" width="70" height="16" fill="#3498db"/>
+  <rect x="195" y="135" width="70" height="16" fill="#3498db"/>
+  <text x="230" y="175" text-anchor="middle" font-size="18" font-weight="bold" fill="#3498db">Self-Hosted</text>
+  <text x="230" y="195" text-anchor="middle" font-size="13" fill="#190F33">You run it</text>
+
+  <text x="80" y="230" font-size="14" fill="#190F33">• Your infrastructure, full control</text>
+  <text x="80" y="260" font-size="14" fill="#190F33">• You decide sizing &amp; placement</text>
+  <text x="80" y="290" font-size="14" fill="#190F33">• You own upgrades, monitoring,</text>
+  <text x="80" y="310" font-size="14" fill="#190F33">  capacity planning, and on-call</text>
+
+  <!-- VS badge -->
+  <circle cx="450" cy="215" r="32" fill="#ffffff" stroke="#190F33" stroke-width="2"/>
+  <text x="450" y="221" text-anchor="middle" font-size="16" font-weight="bold" fill="#190F33">VS</text>
+
+  <!-- Right: managed -->
+  <rect x="490" y="70" width="360" height="290" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <ellipse cx="670" cy="115" rx="45" ry="22" fill="#6933FF"/>
+  <ellipse cx="640" cy="120" rx="25" ry="16" fill="#6933FF"/>
+  <ellipse cx="700" cy="120" rx="25" ry="16" fill="#6933FF"/>
+  <text x="670" y="175" text-anchor="middle" font-size="18" font-weight="bold" fill="#6933FF">Managed</text>
+  <text x="670" y="195" text-anchor="middle" font-size="13" fill="#190F33">CockroachDB Cloud runs it</text>
+
+  <text x="520" y="230" font-size="14" fill="#190F33">• You get a connection string</text>
+  <text x="520" y="260" font-size="14" fill="#190F33">• Less direct infrastructure control</text>
+  <text x="520" y="290" font-size="14" fill="#190F33">• Provider handles provisioning,</text>
+  <text x="520" y="310" font-size="14" fill="#190F33">  upgrades, backups, and scaling</text>
+</svg>

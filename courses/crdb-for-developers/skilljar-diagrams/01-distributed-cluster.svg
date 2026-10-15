@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <text x="450" y="34" font-size="18" font-weight="bold" fill="#190F33" text-anchor="middle">A CockroachDB Cluster</text>
+  <text x="450" y="56" font-size="13" fill="#190F33" text-anchor="middle">Data spread across nodes, with copies kept on each</text>
+
+  <!-- node 1 -->
+  <rect x="80" y="100" width="220" height="150" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="190" y="128" font-size="14" font-weight="bold" fill="#190F33" text-anchor="middle">Node 1</text>
+  <rect x="105" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+  <text x="135" y="165" font-size="12" fill="#27ae60" text-anchor="middle">Rows A</text>
+  <rect x="175" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#3498db" stroke-width="2"/>
+  <text x="205" y="165" font-size="12" fill="#3498db" text-anchor="middle">Copy C</text>
+  <rect x="105" y="188" width="130" height="34" rx="4" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+  <text x="170" y="209" font-size="12" fill="#e67e22" text-anchor="middle">Copy B</text>
+
+  <!-- node 2 -->
+  <rect x="340" y="100" width="220" height="150" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="450" y="128" font-size="14" font-weight="bold" fill="#190F33" text-anchor="middle">Node 2</text>
+  <rect x="365" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+  <text x="395" y="165" font-size="12" fill="#e67e22" text-anchor="middle">Rows B</text>
+  <rect x="435" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+  <text x="465" y="165" font-size="12" fill="#27ae60" text-anchor="middle">Copy A</text>
+  <rect x="365" y="188" width="130" height="34" rx="4" fill="#ffffff" stroke="#3498db" stroke-width="2"/>
+  <text x="430" y="209" font-size="12" fill="#3498db" text-anchor="middle">Copy C</text>
+
+  <!-- node 3 -->
+  <rect x="600" y="100" width="220" height="150" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="710" y="128" font-size="14" font-weight="bold" fill="#190F33" text-anchor="middle">Node 3</text>
+  <rect x="625" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#3498db" stroke-width="2"/>
+  <text x="655" y="165" font-size="12" fill="#3498db" text-anchor="middle">Rows C</text>
+  <rect x="695" y="144" width="60" height="34" rx="4" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+  <text x="725" y="165" font-size="12" fill="#e67e22" text-anchor="middle">Copy B</text>
+  <rect x="625" y="188" width="130" height="34" rx="4" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+  <text x="690" y="209" font-size="12" fill="#27ae60" text-anchor="middle">Copy A</text>
+
+  <!-- connecting lines -->
+  <line x1="300" y1="175" x2="340" y2="175" stroke="#D9D6E8" stroke-width="2"/>
+  <line x1="560" y1="175" x2="600" y2="175" stroke="#D9D6E8" stroke-width="2"/>
+
+  <!-- node 2 down example -->
+  <line x1="420" y1="90" x2="480" y2="260" stroke="#c0392b" stroke-width="3"/>
+  <text x="450" y="280" font-size="13" font-weight="bold" fill="#c0392b" text-anchor="middle">Node 2 fails — its data still lives on Nodes 1 and 3</text>
+
+  <text x="450" y="320" font-size="14" font-weight="bold" fill="#27ae60" text-anchor="middle">Stays online when a node fails</text>
+  <text x="450" y="340" font-size="12" fill="#190F33" text-anchor="middle">Every row has multiple copies on different nodes</text>
+</svg>
