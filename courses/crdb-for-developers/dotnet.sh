@@ -35,6 +35,9 @@ dotnet add package Npgsql || true
 # registers into an IServiceCollection; these provide the concrete types).
 dotnet add package Microsoft.Extensions.DependencyInjection || true
 dotnet add package Microsoft.Extensions.Configuration || true
+# The library's middleware (e.g. RetryMiddleware) takes ILogger<T>, so the app
+# must register logging in its service collection.
+dotnet add package Microsoft.Extensions.Logging || true
 
 if [ "$LAB" = "resilient" ]; then
     cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
@@ -44,6 +47,7 @@ using CockroachDB.DotNet.Core.Extensions;
 using CockroachDB.DotNet.Abstractions.Template;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 // All three nodes are listed (host:port pairs), so the driver fails over if one dies.
@@ -52,6 +56,7 @@ await using var dataSource = NpgsqlDataSource.Create(cs);
 
 // AddCockroachDB registers the template + pipeline; UseRetry retries 40001 for us.
 var services = new ServiceCollection();
+services.AddLogging();
 services.AddCockroachDB(new ConfigurationBuilder().Build(), b => b.UseRetry());
 var template = services.BuildServiceProvider().GetRequiredService<ICockroachDBTemplate>();
 
