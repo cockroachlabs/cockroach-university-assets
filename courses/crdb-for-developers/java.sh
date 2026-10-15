@@ -58,14 +58,13 @@ cat > /root/app/pom.xml <<'XML'
     <repository>
       <id>github</id>
       <url>https://maven.pkg.github.com/felipeg48/cockroachdb-java-library</url>
-      <snapshots><enabled>true</enabled></snapshots>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-java-library-core</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
+      <version>0.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
