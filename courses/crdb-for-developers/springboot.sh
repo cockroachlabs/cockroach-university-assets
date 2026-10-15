@@ -97,6 +97,10 @@ cat > /root/app/src/main/resources/application.properties <<PROPS
 spring.datasource.url=jdbc:postgresql://${HOSTS}/defaultdb?sslmode=disable
 spring.datasource.username=root
 cockroachdb.retry.max-retries=10
+# CRDB's JDBC driver has no LOB support; stop Hibernate's startup probe from
+# calling createClob() (which logs a noisy SQLFeatureNotSupportedException /
+# Hikari "connection marked as broken" WARN on an otherwise-clean boot).
+spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
 PROPS
 
 if [ "$LAB" = "resilient" ]; then
@@ -142,11 +146,10 @@ class Transfers {
 }
 JAVA
 else
-    # Skeleton: a bare app that starts and exits. It does NOT reference the
-    # starter and prints no sentinel, so the Ch1 check (which greps for
-    # CRDB_CONNECT_OK) fails until the learner adds a query runner.
-    # main() uses SpringApplication.exit so `mvn spring-boot:run` returns
-    # promptly instead of hanging the check.
+    # Skeleton: a bare app that boots and exits. Ch1 only asks the learner to
+    # boot it (the starter connects to CockroachDB on startup), so the Ch1 check
+    # greps for "Started App". main() uses SpringApplication.exit so
+    # `mvn spring-boot:run` returns promptly instead of hanging the check.
     cat > /root/app/src/main/java/demo/App.java <<'JAVA'
 package demo;
 import org.springframework.boot.SpringApplication;
