@@ -67,10 +67,6 @@ cat > /root/app/pom.xml <<'XML'
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
     <dependency>
@@ -80,7 +76,7 @@ cat > /root/app/pom.xml <<'XML'
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-spring-boot-starter</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.1</version>
     </dependency>
   </dependencies>
   <build><plugins><plugin>
@@ -101,10 +97,6 @@ cat > /root/app/src/main/resources/application.properties <<PROPS
 spring.datasource.url=jdbc:postgresql://${HOSTS}/defaultdb?sslmode=disable
 spring.datasource.username=root
 cockroachdb.retry.max-retries=10
-# spring-web is on the classpath only so the starter's web-filter bean signature
-# resolves; we don't want an actual server (avoids port 8080 clashes between the
-# check/solve runs), so run as a non-web app.
-spring.main.web-application-type=none
 PROPS
 
 if [ "$LAB" = "resilient" ]; then
