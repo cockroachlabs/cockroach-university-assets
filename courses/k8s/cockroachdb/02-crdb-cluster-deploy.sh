@@ -138,10 +138,16 @@ done
 # Install the CockroachDB cluster via Helm
 # Uses upgrade --install for idempotent retries (plain "helm install" fails
 # with "cannot re-use a name" if a previous attempt left a failed release).
+# Upstream renamed cockroachdb-parent -> cockroachdb-operator; support both.
+if [ -d "${HELM_CHARTS_DIR}/cockroachdb-operator" ]; then
+    PARENT_CHART=cockroachdb-operator
+else
+    PARENT_CHART=cockroachdb-parent
+fi
 echo "[INFO] Installing CockroachDB cluster via Helm..."
 set +e
 for attempt in $(seq 1 30); do
-    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/cockroachdb" \
+    if helm upgrade --install cockroachdb "${HELM_CHARTS_DIR}/${PARENT_CHART}/charts/cockroachdb" \
       --namespace "${NAMESPACE}" --create-namespace \
       --timeout 600s \
       -f /tmp/values.yaml 2>&1; then

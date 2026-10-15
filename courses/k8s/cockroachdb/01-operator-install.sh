@@ -65,9 +65,17 @@ else
     git clone --depth 1 https://github.com/cockroachdb/helm-charts "${HELM_CHARTS_DIR}"
 fi
 
+# Upstream renamed the parent chart dir cockroachdb-parent -> cockroachdb-operator;
+# support both so the lab survives the rename.
+if [ -d "${HELM_CHARTS_DIR}/cockroachdb-operator" ]; then
+    PARENT_CHART=cockroachdb-operator
+else
+    PARENT_CHART=cockroachdb-parent
+fi
+
 # --- Install the CockroachDB Operator ---
 echo "[INFO] Installing cockroach-operator Helm chart..."
-helm install cockroach-operator "${HELM_CHARTS_DIR}/cockroachdb-parent/charts/operator" \
+helm install cockroach-operator "${HELM_CHARTS_DIR}/${PARENT_CHART}/charts/operator" \
   --namespace cockroach-operator-system --create-namespace \
   --set numReplicas=1
 
