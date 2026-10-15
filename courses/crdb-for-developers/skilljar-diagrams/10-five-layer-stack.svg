@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="480" fill="#ffffff"/>
+  <text x="450" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#190F33">CockroachDB's Five Layers</text>
+
+  <line x1="40" y1="65" x2="40" y2="455" stroke="#190F33" stroke-width="2"/>
+  <polygon points="40,465 33,452 47,452" fill="#190F33"/>
+
+  <!-- Layer 1: SQL -->
+  <rect x="70" y="65" width="760" height="70" rx="8" fill="#F4F2FF" stroke="#6933FF" stroke-width="2"/>
+  <circle cx="110" cy="100" r="18" fill="#6933FF"/>
+  <text x="110" y="106" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">1</text>
+  <text x="145" y="94" font-size="18" font-weight="bold" fill="#190F33">SQL layer</text>
+  <text x="145" y="116" font-size="14" fill="#190F33">Parses, plans, and speaks ordinary SQL to your app</text>
+
+  <!-- Layer 2: Transactional -->
+  <rect x="70" y="145" width="760" height="70" rx="8" fill="#F4F2FF" stroke="#3498db" stroke-width="2"/>
+  <circle cx="110" cy="180" r="18" fill="#3498db"/>
+  <text x="110" y="186" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">2</text>
+  <text x="145" y="174" font-size="18" font-weight="bold" fill="#190F33">Transactional layer</text>
+  <text x="145" y="196" font-size="14" fill="#190F33">Enforces ACID &amp; serializable isolation, detects conflicts</text>
+
+  <!-- Layer 3: Distribution -->
+  <rect x="70" y="225" width="760" height="70" rx="8" fill="#F4F2FF" stroke="#27ae60" stroke-width="2"/>
+  <circle cx="110" cy="260" r="18" fill="#27ae60"/>
+  <text x="110" y="266" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">3</text>
+  <text x="145" y="254" font-size="18" font-weight="bold" fill="#190F33">Distribution layer</text>
+  <text x="145" y="276" font-size="14" fill="#190F33">Routes the row to the right range and leaseholder</text>
+
+  <!-- Layer 4: Replication -->
+  <rect x="70" y="305" width="760" height="70" rx="8" fill="#F4F2FF" stroke="#e67e22" stroke-width="2"/>
+  <circle cx="110" cy="340" r="18" fill="#e67e22"/>
+  <text x="110" y="346" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">4</text>
+  <text x="145" y="334" font-size="18" font-weight="bold" fill="#190F33">Replication layer</text>
+  <text x="145" y="356" font-size="14" fill="#190F33">Raft consensus: a majority of replicas must acknowledge</text>
+
+  <!-- Layer 5: Storage -->
+  <rect x="70" y="385" width="760" height="70" rx="8" fill="#F4F2FF" stroke="#c0392b" stroke-width="2"/>
+  <circle cx="110" cy="420" r="18" fill="#c0392b"/>
+  <text x="110" y="426" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">5</text>
+  <text x="145" y="414" font-size="18" font-weight="bold" fill="#190F33">Storage layer</text>
+  <text x="145" y="436" font-size="14" fill="#190F33">Persists key-value data to disk on each node</text>
+</svg>

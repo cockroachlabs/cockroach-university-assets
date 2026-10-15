@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="sans-serif">
+  <text x="450" y="34" font-size="18" font-weight="bold" fill="#190F33" text-anchor="middle">Sequential Keys Create a Hotspot</text>
+  <text x="450" y="56" font-size="13" fill="#190F33" text-anchor="middle">Auto-incrementing IDs always sort to the end of the key range</text>
+
+  <!-- incoming rows -->
+  <g font-size="13" fill="#190F33">
+    <rect x="60" y="90" width="70" height="36" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+    <text x="95" y="113" text-anchor="middle">id = 1</text>
+    <rect x="150" y="90" width="70" height="36" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+    <text x="185" y="113" text-anchor="middle">id = 2</text>
+    <rect x="240" y="90" width="70" height="36" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+    <text x="275" y="113" text-anchor="middle">id = 3</text>
+    <rect x="330" y="90" width="70" height="36" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+    <text x="365" y="113" text-anchor="middle">id = 4</text>
+    <text x="440" y="113" font-size="18" fill="#c0392b">...</text>
+  </g>
+
+  <!-- arrows converging -->
+  <line x1="95" y1="126" x2="430" y2="190" stroke="#c0392b" stroke-width="2"/>
+  <line x1="185" y1="126" x2="430" y2="190" stroke="#c0392b" stroke-width="2"/>
+  <line x1="275" y1="126" x2="430" y2="190" stroke="#c0392b" stroke-width="2"/>
+  <line x1="365" y1="126" x2="430" y2="190" stroke="#c0392b" stroke-width="2"/>
+
+  <!-- three nodes, one hot -->
+  <rect x="330" y="200" width="100" height="90" rx="8" fill="#ffe8e4" stroke="#c0392b" stroke-width="3"/>
+  <text x="380" y="228" font-size="13" font-weight="bold" fill="#c0392b" text-anchor="middle">Node 1</text>
+  <text x="380" y="248" font-size="12" fill="#c0392b" text-anchor="middle">Range</text>
+  <text x="380" y="264" font-size="12" font-weight="bold" fill="#c0392b" text-anchor="middle">[k-z]</text>
+  <text x="380" y="282" font-size="18" font-weight="bold" fill="#c0392b" text-anchor="middle">🔥</text>
+
+  <rect x="450" y="200" width="100" height="90" rx="8" fill="#F9F8F3" stroke="#D9D6E8" stroke-width="2"/>
+  <text x="500" y="228" font-size="13" fill="#190F33" text-anchor="middle">Node 2</text>
+  <text x="500" y="248" font-size="12" fill="#190F33" text-anchor="middle">Range</text>
+  <text x="500" y="264" font-size="12" fill="#190F33" text-anchor="middle">[a-f]</text>
+  <text x="500" y="282" font-size="12" fill="#190F33" text-anchor="middle">idle</text>
+
+  <rect x="570" y="200" width="100" height="90" rx="8" fill="#F9F8F3" stroke="#D9D6E8" stroke-width="2"/>
+  <text x="620" y="228" font-size="13" fill="#190F33" text-anchor="middle">Node 3</text>
+  <text x="620" y="248" font-size="12" fill="#190F33" text-anchor="middle">Range</text>
+  <text x="620" y="264" font-size="12" fill="#190F33" text-anchor="middle">[g-j]</text>
+  <text x="620" y="282" font-size="12" fill="#190F33" text-anchor="middle">idle</text>
+
+  <text x="450" y="330" font-size="14" font-weight="bold" fill="#c0392b" text-anchor="middle">All new writes pile onto one node</text>
+  <text x="450" y="350" font-size="12" fill="#190F33" text-anchor="middle">while the rest of the cluster sits idle</text>
+</svg>

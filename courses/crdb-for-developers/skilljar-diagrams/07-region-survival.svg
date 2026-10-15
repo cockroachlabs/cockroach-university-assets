@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#190F33">Goal: Survive Region Failure</text>
+
+  <!-- Region 1 - UP -->
+  <rect x="40" y="65" width="240" height="220" rx="10" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="160" y="92" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Region: us-east</text>
+  <circle cx="160" cy="150" r="22" fill="#27ae60"/><text x="160" y="156" text-anchor="middle" font-size="12" fill="#ffffff">n1</text>
+  <text x="160" y="210" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">&#10003; UP</text>
+  <text x="160" y="255" text-anchor="middle" font-size="12" fill="#190F33">holds a replica</text>
+
+  <!-- Region 2 - DOWN -->
+  <rect x="330" y="65" width="240" height="220" rx="10" fill="#FCEAEA" stroke="#c0392b" stroke-width="3"/>
+  <text x="450" y="92" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Region: us-west</text>
+  <circle cx="450" cy="150" r="22" fill="#c0392b"/><text x="450" y="156" text-anchor="middle" font-size="12" fill="#ffffff">n2</text>
+  <text x="450" y="210" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="bold">&#10007; ENTIRE REGION DOWN</text>
+  <text x="450" y="255" text-anchor="middle" font-size="12" fill="#190F33">holds a replica</text>
+
+  <!-- Region 3 - UP -->
+  <rect x="620" y="65" width="240" height="220" rx="10" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="740" y="92" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Region: eu-west</text>
+  <circle cx="740" cy="150" r="22" fill="#27ae60"/><text x="740" y="156" text-anchor="middle" font-size="12" fill="#ffffff">n3</text>
+  <text x="740" y="210" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">&#10003; UP</text>
+  <text x="740" y="255" text-anchor="middle" font-size="12" fill="#190F33">holds a replica</text>
+
+  <rect x="300" y="315" width="300" height="55" rx="8" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+  <text x="450" y="338" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">Majority intact (us-east + eu-west)</text>
+  <text x="450" y="358" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">Cluster stays UP</text>
+</svg>

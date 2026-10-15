@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#190F33">Losing a Minority: the Range Stays Available</text>
+
+  <!-- Node A - DOWN -->
+  <rect x="80" y="110" width="170" height="90" rx="8" fill="#FCEAEA" stroke="#c0392b" stroke-width="3"/>
+  <text x="165" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Node A</text>
+  <text x="165" y="162" text-anchor="middle" font-size="14" fill="#c0392b" font-weight="bold">&#10007; DOWN</text>
+  <text x="165" y="182" text-anchor="middle" font-size="12" fill="#190F33">Replica unreachable</text>
+
+  <!-- Node B - UP -->
+  <rect x="365" y="110" width="170" height="90" rx="8" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="450" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Node B</text>
+  <text x="450" y="162" text-anchor="middle" font-size="14" fill="#27ae60" font-weight="bold">&#10003; UP</text>
+  <text x="450" y="182" text-anchor="middle" font-size="12" fill="#190F33">New leaseholder</text>
+
+  <!-- Node C - UP -->
+  <rect x="650" y="110" width="170" height="90" rx="8" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="735" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#190F33">Node C</text>
+  <text x="735" y="162" text-anchor="middle" font-size="14" fill="#27ae60" font-weight="bold">&#10003; UP</text>
+  <text x="735" y="182" text-anchor="middle" font-size="12" fill="#190F33">Replica</text>
+
+  <!-- Majority bracket under B + C -->
+  <path d="M 365 225 L 365 250 L 820 250 L 820 225" fill="none" stroke="#27ae60" stroke-width="3"/>
+  <rect x="440" y="260" width="300" height="60" rx="8" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+  <text x="590" y="283" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">Majority (2 of 3) remains</text>
+  <text x="590" y="303" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">&#8594; range is still AVAILABLE</text>
+
+  <text x="450" y="365" text-anchor="middle" font-size="13" fill="#190F33">One node down is a minority loss &#8212; reads and writes keep working without interruption.</text>
+</svg>

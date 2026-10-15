@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" font-family="sans-serif">
+  <text x="450" y="34" font-size="18" font-weight="bold" fill="#190F33" text-anchor="middle">A Table Split Into Ranges</text>
+  <text x="450" y="56" font-size="13" fill="#190F33" text-anchor="middle">Sorted by primary key, then cut into contiguous chunks</text>
+
+  <!-- table -->
+  <text x="450" y="92" font-size="14" font-weight="bold" fill="#190F33" text-anchor="middle">book table (sorted by id)</text>
+  <rect x="80" y="104" width="740" height="46" rx="6" fill="#F4F2FF" stroke="#6933FF" stroke-width="2"/>
+  <text x="450" y="132" font-size="13" fill="#190F33" text-anchor="middle">a1... b7... c3... d9... e2... f5... g8... h4... i6... j1...</text>
+
+  <!-- arrow down -->
+  <line x1="450" y1="150" x2="450" y2="178" stroke="#D9D6E8" stroke-width="2"/>
+  <polygon points="450,188 443,174 457,174" fill="#D9D6E8"/>
+
+  <!-- three ranges -->
+  <rect x="80" y="196" width="230" height="78" rx="8" fill="#ffffff" stroke="#6933FF" stroke-width="3"/>
+  <text x="195" y="222" font-size="13" font-weight="bold" fill="#6933FF" text-anchor="middle">Range 1</text>
+  <text x="195" y="242" font-size="12" fill="#190F33" text-anchor="middle">keys a1 – c3</text>
+  <text x="195" y="260" font-size="12" fill="#190F33" text-anchor="middle">contiguous slice</text>
+
+  <rect x="335" y="196" width="230" height="78" rx="8" fill="#ffffff" stroke="#6933FF" stroke-width="3"/>
+  <text x="450" y="222" font-size="13" font-weight="bold" fill="#6933FF" text-anchor="middle">Range 2</text>
+  <text x="450" y="242" font-size="12" fill="#190F33" text-anchor="middle">keys d9 – f5</text>
+  <text x="450" y="260" font-size="12" fill="#190F33" text-anchor="middle">contiguous slice</text>
+
+  <rect x="590" y="196" width="230" height="78" rx="8" fill="#ffffff" stroke="#6933FF" stroke-width="3"/>
+  <text x="705" y="222" font-size="13" font-weight="bold" fill="#6933FF" text-anchor="middle">Range 3</text>
+  <text x="705" y="242" font-size="12" fill="#190F33" text-anchor="middle">keys g8 – j1</text>
+  <text x="705" y="260" font-size="12" fill="#190F33" text-anchor="middle">contiguous slice</text>
+
+  <text x="450" y="310" font-size="13" fill="#190F33" text-anchor="middle">CockroachDB splits and merges ranges automatically as the table grows</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="420" fill="#ffffff"/>
+  <text x="450" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#190F33">Automatic Retry on Conflict</text>
+
+  <!-- A: run transaction -->
+  <rect x="40" y="70" width="220" height="80" rx="10" fill="#F4F2FF" stroke="#3498db" stroke-width="3"/>
+  <text x="150" y="105" text-anchor="middle" font-size="15" font-weight="bold" fill="#3498db">App runs transaction</text>
+  <text x="150" y="128" text-anchor="middle" font-size="12" fill="#190F33">library sends it to the cluster</text>
+
+  <!-- B: conflict -->
+  <rect x="340" y="70" width="280" height="80" rx="10" fill="#F9F8F3" stroke="#c0392b" stroke-width="3"/>
+  <text x="480" y="105" text-anchor="middle" font-size="15" font-weight="bold" fill="#c0392b">Cluster returns SQLSTATE 40001</text>
+  <text x="480" y="128" text-anchor="middle" font-size="12" fill="#190F33">a serialization conflict</text>
+
+  <!-- D: backoff -->
+  <rect x="340" y="230" width="280" height="80" rx="10" fill="#F4F2FF" stroke="#e67e22" stroke-width="3"/>
+  <text x="480" y="265" text-anchor="middle" font-size="15" font-weight="bold" fill="#e67e22">Library backs off</text>
+  <text x="480" y="288" text-anchor="middle" font-size="12" fill="#190F33">exponential delay: 1s, 2s, 4s...</text>
+
+  <!-- C: commit succeeds -->
+  <rect x="680" y="150" width="180" height="80" rx="10" fill="#F4F2FF" stroke="#27ae60" stroke-width="3"/>
+  <text x="770" y="185" text-anchor="middle" font-size="15" font-weight="bold" fill="#27ae60">Commit succeeds</text>
+  <text x="770" y="208" text-anchor="middle" font-size="12" fill="#190F33">no conflict this time</text>
+
+  <!-- Arrows -->
+  <line x1="260" y1="110" x2="330" y2="110" stroke="#190F33" stroke-width="2"/>
+  <polygon points="330,110 317,103 317,117" fill="#190F33"/>
+
+  <line x1="480" y1="150" x2="480" y2="220" stroke="#190F33" stroke-width="2"/>
+  <polygon points="480,220 473,207 487,207" fill="#190F33"/>
+
+  <!-- loop back to A -->
+  <path d="M 340 270 C 150 270, 60 200, 100 155" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="100,155 85,160 100,172" fill="#190F33"/>
+  <text x="200" y="330" text-anchor="middle" font-size="12" fill="#190F33">re-runs the whole transaction</text>
+
+  <!-- success path D to C -->
+  <path d="M 620 250 C 680 230, 700 210, 710 210" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="712,210 696,205 698,218" fill="#190F33"/>
+  <text x="700" y="320" text-anchor="middle" font-size="12" fill="#190F33">after a successful retry</text>
+</svg>

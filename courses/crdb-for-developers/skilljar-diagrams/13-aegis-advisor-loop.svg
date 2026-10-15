@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="420" fill="#ffffff"/>
+  <text x="450" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#190F33">Cockroach Aegis: The Advisor Loop</text>
+
+  <!-- Top: Detect -->
+  <rect x="340" y="60" width="220" height="80" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="450" y="90" text-anchor="middle" font-size="16" font-weight="bold" fill="#6933FF">1. Detect</text>
+  <text x="450" y="112" text-anchor="middle" font-size="12" fill="#190F33">e.g. a query got slower</text>
+
+  <!-- Right: Recommend -->
+  <rect x="650" y="190" width="220" height="80" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="760" y="220" text-anchor="middle" font-size="16" font-weight="bold" fill="#6933FF">2. Recommend</text>
+  <text x="760" y="242" text-anchor="middle" font-size="12" fill="#190F33">Proposes a specific fix</text>
+
+  <!-- Bottom: Human approves -->
+  <rect x="340" y="320" width="220" height="80" rx="10" fill="#F9F8F3" stroke="#e67e22" stroke-width="3"/>
+  <text x="450" y="350" text-anchor="middle" font-size="16" font-weight="bold" fill="#e67e22">3. Human Approves</text>
+  <text x="450" y="372" text-anchor="middle" font-size="12" fill="#190F33">A person reviews &amp; decides</text>
+
+  <!-- Left: Applied -->
+  <rect x="30" y="190" width="220" height="80" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="140" y="220" text-anchor="middle" font-size="16" font-weight="bold" fill="#6933FF">4. Applied</text>
+  <text x="140" y="242" text-anchor="middle" font-size="12" fill="#190F33">Change takes effect</text>
+
+  <!-- Arrows forming the cycle -->
+  <path d="M 560 100 C 650 100, 720 140, 750 190" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="750,190 737,174 758,170" fill="#190F33"/>
+
+  <path d="M 745 270 C 680 320, 580 330, 562 345" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="562,345 578,337 580,358" fill="#190F33"/>
+
+  <path d="M 338 350 C 230 330, 155 300, 140 272" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="140,272 134,292 155,286" fill="#190F33"/>
+
+  <path d="M 150 190 C 220 140, 280 110, 338 95" fill="none" stroke="#190F33" stroke-width="2"/>
+  <polygon points="338,95 319,92 323,113" fill="#190F33"/>
+
+  <text x="450" y="412" text-anchor="middle" font-size="12" fill="#190F33">Aegis recommends — a human always approves before anything changes</text>
+</svg>
