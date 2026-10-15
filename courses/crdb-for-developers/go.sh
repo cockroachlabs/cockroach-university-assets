@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # Per-language setup for "CockroachDB for Go Developers" labs.
 # Usage: go.sh [connect|resilient]
-# Requires GH_USER / GH_PAT (Instruqt track variables) while the library is pre-release.
+# Requires GH_USER / GH_PAT (Instruqt secrets) while the library is pre-release.
 
 LAB=${1:-connect}
 GO_VER=${GO_VER:-1.26.3}
@@ -27,17 +27,8 @@ grep -q 'GOPRIVATE' ~/.bashrc || echo 'export GOPRIVATE=github.com/felipeg48/*' 
 mkdir -p /root/app && cd /root/app
 [ -f go.mod ] || go mod init crdblab
 
-# Pre-pull the library + pgx into go.mod and the module cache (no `go mod tidy`,
-# which would prune the library from the connect starter that doesn't import it yet).
-set +x   # the git credential rewrite above already injected the token; keep it out of logs
-go get github.com/felipeg48/cockroachdb-go-library || true
-go get github.com/jackc/pgx/v5 || true
-set -x
-
-if [ "$LAB" = "resilient" ]; then
-    cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
-      "CREATE TABLE IF NOT EXISTS accounts (id INT PRIMARY KEY, balance INT); UPSERT INTO accounts VALUES (1, 1000), (2, 1000);" || true
-    cat > /root/app/main.go <<'GO'
+write_resilient() {
+cat > /root/app/main.go <<'GO'
 package main
 
 import (
@@ -61,7 +52,6 @@ func main() {
 		panic(err)
 	}
 	defer pool.Close()
-
 	n := 0
 	for {
 		err := pool.ExecuteTx(ctx, func(tx pgx.Tx) error {
@@ -83,14 +73,52 @@ func main() {
 	}
 }
 GO
+}
+
+write_connect_full() {
+cat > /root/app/main.go <<'GO'
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/felipeg48/cockroachdb-go-library/crdbgo"
+	"github.com/felipeg48/cockroachdb-go-library/crdbgo/pgxadapter"
+)
+
+func main() {
+	ctx := context.Background()
+	connStr := "postgresql://root@localhost:26257/defaultdb?sslmode=disable"
+	pool, err := pgxadapter.NewPool(ctx, connStr, []crdbgo.Option{
+		crdbgo.WithMaxRetries(5), crdbgo.WithJitter(true),
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Close()
+	fmt.Println("connected to CockroachDB")
+}
+GO
+}
+
+if [ "$LAB" = "resilient" ]; then
+    cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
+      "CREATE TABLE IF NOT EXISTS accounts (id INT PRIMARY KEY, balance INT); UPSERT INTO accounts VALUES (1, 1000), (2, 1000);" || true
+    write_resilient
+    go mod tidy
 else
+    # Seed go.mod + go.sum with every (transitive) dependency by tidying against the
+    # full program, then leave a skeleton for the learner to complete.
+    write_connect_full
+    go mod tidy
     cat > /root/app/main.go <<'GO'
 package main
 
 import "fmt"
 
 func main() {
-	// Open a pool with pgxadapter.NewPool during the challenges, then run a query.
+	// Open a connection pool and run your first query during the challenges.
 	fmt.Println("TODO: connect to CockroachDB")
 }
 GO
