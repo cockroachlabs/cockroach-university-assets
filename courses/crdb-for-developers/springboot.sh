@@ -3,13 +3,27 @@ set -euxo pipefail
 
 # Per-language setup for "CockroachDB for Spring Boot Developers" labs.
 # Usage: springboot.sh [connect|resilient]
-# Expects a JDK already installed (the track pulls base/ubuntu-jvm-21.sh first).
-# Requires GH_USER / GH_PAT (Instruqt track variables) while the starter is pre-release.
-# ASSUMPTION: Spring Boot 4.x + Java 21. Starter coords com.cockroachlabs:cockroachdb-spring-boot-starter:0.1.0-SNAPSHOT.
+# Installs Temurin JDK 21 (the starter targets Java 21 and Spring Boot 4.1) +
+# Maven, then lays down a Spring Boot project wired to the CockroachDB Spring
+# Boot starter on GitHub Packages.
+# Requires GH_USER / GH_PAT (Instruqt secrets) while the starter is pre-release.
 
 LAB=${1:-connect}
+JDK_VER=${JDK_VER:-21}
 
+# --- Install Maven, then Temurin JDK 21 as the system default ----------------
 DEBIAN_FRONTEND=noninteractive apt -y install maven || true
+if ! java -version 2>&1 | grep -q "version \"${JDK_VER}"; then
+    curl -fsSL "https://api.adoptium.net/v3/binary/latest/${JDK_VER}/ga/linux/x64/jdk/hotspot/normal/eclipse" -o /tmp/jdk.tgz
+    rm -rf "/opt/jdk-${JDK_VER}" && mkdir -p "/opt/jdk-${JDK_VER}"
+    tar -C "/opt/jdk-${JDK_VER}" --strip-components=1 -xzf /tmp/jdk.tgz && rm -f /tmp/jdk.tgz
+    update-alternatives --install /usr/bin/java  java  "/opt/jdk-${JDK_VER}/bin/java"  2100
+    update-alternatives --install /usr/bin/javac javac "/opt/jdk-${JDK_VER}/bin/javac" 2100
+    update-alternatives --set java  "/opt/jdk-${JDK_VER}/bin/java"
+    update-alternatives --set javac "/opt/jdk-${JDK_VER}/bin/javac"
+fi
+export JAVA_HOME="/opt/jdk-${JDK_VER}"
+grep -q 'JAVA_HOME=/opt/jdk' ~/.bashrc || echo "export JAVA_HOME=/opt/jdk-${JDK_VER}" >> ~/.bashrc
 
 # --- Strategy B: Maven (GitHub Packages) credentials ------------------------
 # PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
@@ -29,13 +43,15 @@ EOF
 set -x
 
 mkdir -p /root/app/src/main/java/demo /root/app/src/main/resources && cd /root/app
+# Spring Boot parent MUST match the version the starter was built against (4.1.1),
+# otherwise the starter's auto-configuration resolves against the wrong Spring APIs.
 cat > /root/app/pom.xml <<'XML'
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.4</version>
+    <version>4.1.1</version>
     <relativePath/>
   </parent>
   <groupId>com.example</groupId>
@@ -60,7 +76,7 @@ cat > /root/app/pom.xml <<'XML'
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-spring-boot-starter</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
+      <version>0.1.0</version>
     </dependency>
   </dependencies>
   <build><plugins><plugin>
@@ -84,6 +100,8 @@ cockroachdb.retry.max-retries=10
 PROPS
 
 if [ "$LAB" = "resilient" ]; then
+    # Full resilient app: an infinite transfer loop. main() blocks in run()
+    # because the CommandLineRunner never returns, so the app keeps serving.
     cat > /root/app/src/main/java/demo/App.java <<'JAVA'
 package demo;
 import com.cockroachlabs.data.annotation.CockroachDB;
@@ -124,6 +142,11 @@ class Transfers {
 }
 JAVA
 else
+    # Skeleton: a bare app that starts and exits. It does NOT reference the
+    # starter and prints no sentinel, so the Ch1 check (which greps for
+    # CRDB_CONNECT_OK) fails until the learner adds a query runner.
+    # main() uses SpringApplication.exit so `mvn spring-boot:run` returns
+    # promptly instead of hanging the check.
     cat > /root/app/src/main/java/demo/App.java <<'JAVA'
 package demo;
 import org.springframework.boot.SpringApplication;
@@ -131,8 +154,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class App {
-    public static void main(String[] args) { SpringApplication.run(App.class, args); }
-    // You'll add an entity, a repository, and your first query during the challenges.
+    public static void main(String[] args) {
+        System.exit(SpringApplication.exit(SpringApplication.run(App.class, args)));
+    }
+    // TODO: add a runner that queries the database during the challenges.
 }
 JAVA
 fi
