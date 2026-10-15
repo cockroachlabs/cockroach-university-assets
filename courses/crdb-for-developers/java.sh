@@ -3,13 +3,31 @@ set -euxo pipefail
 
 # Per-language setup for "CockroachDB for Java Developers" labs.
 # Usage: java.sh [connect|resilient]
-# Expects a JDK already installed (the track pulls base/ubuntu-jvm-21.sh first).
-# Requires GH_USER / GH_PAT (Instruqt track variables) while the library is pre-release.
-# ASSUMPTION: JDK 21 + Maven. The library targets Java 25 — verify on first test.
+# Installs Temurin JDK 25 (the published core jar is Java 25 bytecode, so an
+# older JDK can neither compile nor run against it) + Maven, then lays down a
+# Maven project wired to the CockroachDB Java library on GitHub Packages.
+# Requires GH_USER / GH_PAT (Instruqt secrets) while the library is pre-release.
 
 LAB=${1:-connect}
+JDK_VER=${JDK_VER:-25}
 
+# --- Install Maven, then Temurin JDK 25 as the system default ----------------
 DEBIAN_FRONTEND=noninteractive apt -y install maven || true
+
+# Install JDK 25 AFTER maven so our update-alternatives --set wins over the
+# default-jre that maven pulls in. mvn (non-interactive check scripts) then
+# resolves `java` -> JDK 25 off the PATH.
+if ! java -version 2>&1 | grep -q 'version "25'; then
+    curl -fsSL "https://api.adoptium.net/v3/binary/latest/${JDK_VER}/ga/linux/x64/jdk/hotspot/normal/eclipse" -o /tmp/jdk.tgz
+    rm -rf "/opt/jdk-${JDK_VER}" && mkdir -p "/opt/jdk-${JDK_VER}"
+    tar -C "/opt/jdk-${JDK_VER}" --strip-components=1 -xzf /tmp/jdk.tgz && rm -f /tmp/jdk.tgz
+    update-alternatives --install /usr/bin/java  java  "/opt/jdk-${JDK_VER}/bin/java"  2500
+    update-alternatives --install /usr/bin/javac javac "/opt/jdk-${JDK_VER}/bin/javac" 2500
+    update-alternatives --set java  "/opt/jdk-${JDK_VER}/bin/java"
+    update-alternatives --set javac "/opt/jdk-${JDK_VER}/bin/javac"
+fi
+export JAVA_HOME="/opt/jdk-${JDK_VER}"
+grep -q 'JAVA_HOME=/opt/jdk' ~/.bashrc || echo "export JAVA_HOME=/opt/jdk-${JDK_VER}" >> ~/.bashrc
 
 # --- Strategy B: Maven via GitHub Packages ----------------------------------
 # PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
@@ -35,18 +53,19 @@ cat > /root/app/pom.xml <<'XML'
   <groupId>com.example</groupId>
   <artifactId>crdblab</artifactId>
   <version>1.0</version>
-  <properties><maven.compiler.release>21</maven.compiler.release></properties>
+  <properties><maven.compiler.release>25</maven.compiler.release></properties>
   <repositories>
     <repository>
       <id>github</id>
       <url>https://maven.pkg.github.com/felipeg48/cockroachdb-java-library</url>
+      <snapshots><enabled>true</enabled></snapshots>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-java-library-core</artifactId>
-      <version>LATEST</version>
+      <version>0.1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
@@ -73,7 +92,6 @@ if [ "$LAB" = "resilient" ]; then
     cat > /root/app/src/main/java/App.java <<'JAVA'
 import com.cockroachlabs.crdb.Crdb;
 import org.postgresql.ds.PGSimpleDataSource;
-import javax.sql.DataSource;
 
 public class App {
     public static void main(String[] args) throws Exception {
@@ -97,21 +115,25 @@ public class App {
     }
 }
 JAVA
+    # Seed the local repo cache so the first build is offline-fast.
+    mvn -q -f /root/app/pom.xml dependency:go-offline || true
 else
+    # Skeleton: deliberately does NOT reference the library — the Ch1 check
+    # greps for "Crdb", so the learner must add it. (No "Crdb" string here,
+    # not even in a comment, or the check would pass for free.)
     cat > /root/app/src/main/java/App.java <<'JAVA'
-import com.cockroachlabs.crdb.Crdb;
 import org.postgresql.ds.PGSimpleDataSource;
 
 public class App {
     public static void main(String[] args) throws Exception {
         PGSimpleDataSource ds = new PGSimpleDataSource();
         ds.setUrl("jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable&user=root");
-        // You'll add your first query here during the challenges.
-        System.out.println("connected to CockroachDB");
+        // TODO: run your first query during the challenges.
+        System.out.println("starter app");
     }
 }
 JAVA
+    mvn -q -f /root/app/pom.xml dependency:go-offline || true
 fi
 
-mvn -q -f /root/app/pom.xml dependency:go-offline || true
 echo "[INFO] Java lab assets ready (${LAB})"
