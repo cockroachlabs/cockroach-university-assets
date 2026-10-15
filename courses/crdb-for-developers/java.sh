@@ -75,6 +75,14 @@ cat > /root/app/pom.xml <<'XML'
   </dependencies>
   <build>
     <plugins>
+      <!-- Ubuntu's Maven defaults to compiler-plugin 3.1, which predates the
+           <release> option and falls back to source level 5. Pin a modern one. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration><release>25</release></configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
