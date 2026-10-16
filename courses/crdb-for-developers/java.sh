@@ -29,6 +29,11 @@ fi
 export JAVA_HOME="/opt/jdk-${JDK_VER}"
 grep -q 'JAVA_HOME=/opt/jdk' ~/.bashrc || echo "export JAVA_HOME=/opt/jdk-${JDK_VER}" >> ~/.bashrc
 
+# Silence the JDK 25 "sun.misc.Unsafe::objectFieldOffset" deprecation warnings that
+# Maven's bundled guava emits on every run. Harmless but noisy; this flag opts in.
+export MAVEN_OPTS="${MAVEN_OPTS:-} --sun-misc-unsafe-memory-access=allow"
+grep -q 'MAVEN_OPTS' ~/.bashrc || echo 'export MAVEN_OPTS="--sun-misc-unsafe-memory-access=allow"' >> ~/.bashrc
+
 # --- Strategy B: Maven via GitHub Packages ----------------------------------
 # PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
 mkdir -p ~/.m2
