@@ -162,9 +162,6 @@ def format_results(symptom, results, prereq_chains):
                     output.append(f"    {depth_indicator}-> {prereq['prerequisite_name']}")
                 output.append("")
 
-    output.append("-" * 70)
-    output.append("TIP: Use Claude Code to query the opsrag database directly for deeper analysis.")
-    output.append("     Example: claude 'Query opsrag and help me troubleshoot: <your symptom>'")
     output.append("")
 
     return "\n".join(output)
