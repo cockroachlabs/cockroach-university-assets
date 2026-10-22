@@ -26,14 +26,15 @@ mkdir -p /root/app && cd /root/app
 dotnet nuget add source "https://cockroachlabs.github.io/cockroachdb-dotnet-library/nuget/index.json" \
   -n cockroachlabs || true
 dotnet add package CockroachDB.DotNet.Core --version 1.0.1 || true
-dotnet add package Npgsql || true
-# Concrete DI container + configuration (AddCockroachDB takes IConfiguration and
-# registers into an IServiceCollection; these provide the concrete types).
-dotnet add package Microsoft.Extensions.DependencyInjection || true
-dotnet add package Microsoft.Extensions.Configuration || true
-# The library's middleware (e.g. RetryMiddleware) takes ILogger<T>, so the app
-# must register logging in its service collection.
-dotnet add package Microsoft.Extensions.Logging || true
+# Npgsql is transitive via CockroachDB.DotNet.Core — do NOT add it without a
+# version. A version-less `dotnet add package` resolves "latest" across all
+# sources and crashes on .NET 11 prerelease metadata ("Object reference not
+# set"). Concrete DI container + configuration + logging (AddCockroachDB
+# registers into an IServiceCollection; middleware takes ILogger<T>). Pin to the
+# net10 release family (10.0.0) so resolution is deterministic and never prerelease.
+dotnet add package Microsoft.Extensions.DependencyInjection --version 10.0.0 || true
+dotnet add package Microsoft.Extensions.Configuration --version 10.0.0 || true
+dotnet add package Microsoft.Extensions.Logging --version 10.0.0 || true
 
 if [ "$LAB" = "resilient" ]; then
     cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
