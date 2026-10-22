@@ -30,11 +30,12 @@ dotnet add package CockroachDB.DotNet.Core --version 1.0.1 || true
 # version. A version-less `dotnet add package` resolves "latest" across all
 # sources and crashes on .NET 11 prerelease metadata ("Object reference not
 # set"). Concrete DI container + configuration + logging (AddCockroachDB
-# registers into an IServiceCollection; middleware takes ILogger<T>). Pin to the
-# net10 release family (10.0.0) so resolution is deterministic and never prerelease.
-dotnet add package Microsoft.Extensions.DependencyInjection --version 10.0.0 || true
-dotnet add package Microsoft.Extensions.Configuration --version 10.0.0 || true
-dotnet add package Microsoft.Extensions.Logging --version 10.0.0 || true
+# registers into an IServiceCollection; middleware takes ILogger<T>).
+# CockroachDB.DotNet.Core 1.0.1's transitive deps require these at >= 10.0.13,
+# so pin to that floor — 10.0.0 triggers NU1605 (package downgrade).
+dotnet add package Microsoft.Extensions.DependencyInjection --version 10.0.13 || true
+dotnet add package Microsoft.Extensions.Configuration --version 10.0.13 || true
+dotnet add package Microsoft.Extensions.Logging --version 10.0.13 || true
 
 if [ "$LAB" = "resilient" ]; then
     cockroach sql --insecure --host=localhost:26257 -d defaultdb -e \
