@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="sans-serif">
+  <text x="450" y="34" font-size="18" font-weight="bold" fill="#190F33" text-anchor="middle">The Single-Server Ceiling</text>
+
+  <!-- server box -->
+  <rect x="330" y="70" width="240" height="160" rx="10" fill="#F4F2FF" stroke="#6933FF" stroke-width="3"/>
+  <text x="450" y="98" font-size="15" font-weight="bold" fill="#190F33" text-anchor="middle">Server</text>
+  <rect x="355" y="112" width="60" height="42" rx="4" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+  <text x="385" y="136" font-size="12" fill="#c0392b" text-anchor="middle" font-weight="bold">CPU 100%</text>
+  <rect x="485" y="112" width="60" height="42" rx="4" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+  <text x="515" y="130" font-size="12" fill="#c0392b" text-anchor="middle" font-weight="bold">Disk</text>
+  <text x="515" y="146" font-size="12" fill="#c0392b" text-anchor="middle" font-weight="bold">100%</text>
+
+  <!-- gauge bars -->
+  <rect x="355" y="168" width="60" height="10" rx="3" fill="#F9F8F3" stroke="#D9D6E8"/>
+  <rect x="355" y="168" width="60" height="10" rx="3" fill="#c0392b"/>
+  <rect x="485" y="168" width="60" height="10" rx="3" fill="#F9F8F3" stroke="#D9D6E8"/>
+  <rect x="485" y="168" width="60" height="10" rx="3" fill="#c0392b"/>
+
+  <text x="450" y="200" font-size="13" fill="#190F33" text-anchor="middle">Maxed out — nowhere left to grow</text>
+  <text x="450" y="218" font-size="13" fill="#190F33" text-anchor="middle">All reads and writes go through this one machine</text>
+
+  <!-- failure note -->
+  <polygon points="450,252 468,284 432,284" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+  <text x="450" y="277" font-size="16" fill="#e67e22" text-anchor="middle" font-weight="bold">!</text>
+  <text x="450" y="306" font-size="14" font-weight="bold" fill="#c0392b" text-anchor="middle">Downtime when it fails</text>
+  <text x="450" y="326" font-size="12" fill="#190F33" text-anchor="middle">No second copy of the data — one failure takes the whole</text>
+  <text x="450" y="342" font-size="12" fill="#190F33" text-anchor="middle">application offline</text>
+</svg>

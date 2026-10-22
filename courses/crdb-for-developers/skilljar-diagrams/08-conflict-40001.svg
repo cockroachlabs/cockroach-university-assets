@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#190F33">Conflicting Writes: One Transaction Retries</text>
+
+  <!-- Txn 1 -->
+  <rect x="60" y="80" width="200" height="70" rx="8" fill="#F4F2FF" stroke="#3498db" stroke-width="2"/>
+  <text x="160" y="110" text-anchor="middle" font-size="14" font-weight="bold" fill="#3498db">Transaction 1</text>
+  <text x="160" y="130" text-anchor="middle" font-size="12" fill="#190F33">updates row X</text>
+
+  <!-- Txn 2 -->
+  <rect x="60" y="250" width="200" height="70" rx="8" fill="#F4F2FF" stroke="#e67e22" stroke-width="2"/>
+  <text x="160" y="280" text-anchor="middle" font-size="14" font-weight="bold" fill="#e67e22">Transaction 2</text>
+  <text x="160" y="300" text-anchor="middle" font-size="12" fill="#190F33">updates row X</text>
+
+  <!-- shared row -->
+  <rect x="380" y="165" width="140" height="70" rx="8" fill="#F9F8F3" stroke="#190F33" stroke-width="2"/>
+  <text x="450" y="195" text-anchor="middle" font-size="13" font-weight="bold" fill="#190F33">Row X</text>
+  <text x="450" y="215" text-anchor="middle" font-size="12" fill="#190F33">overlapping access</text>
+
+  <line x1="260" y1="115" x2="380" y2="185" stroke="#3498db" stroke-width="2"/>
+  <line x1="260" y1="285" x2="380" y2="215" stroke="#e67e22" stroke-width="2"/>
+
+  <!-- Txn1 result -->
+  <rect x="580" y="80" width="260" height="70" rx="8" fill="#eafaf1" stroke="#27ae60" stroke-width="3"/>
+  <text x="710" y="110" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">&#10003; COMMITTED</text>
+  <text x="710" y="130" text-anchor="middle" font-size="12" fill="#190F33">Transaction 1 succeeds</text>
+  <line x1="520" y1="195" x2="580" y2="115" stroke="#190F33" stroke-width="2"/>
+
+  <!-- Txn2 result -->
+  <rect x="580" y="250" width="260" height="70" rx="8" fill="#FCEAEA" stroke="#c0392b" stroke-width="3"/>
+  <text x="710" y="278" text-anchor="middle" font-size="14" font-weight="bold" fill="#c0392b">&#10007; ABORTED</text>
+  <text x="710" y="298" text-anchor="middle" font-size="12" fill="#c0392b">SQLSTATE 40001 &#8212; retry</text>
+  <line x1="520" y1="215" x2="580" y2="285" stroke="#190F33" stroke-width="2"/>
+
+  <!-- retry loop -->
+  <path d="M 840 320 C 880 320 880 250 840 250" fill="none" stroke="#c0392b" stroke-width="2"/>
+  <polygon points="840,250 850,245 850,258" fill="#c0392b"/>
+  <text x="450" y="365" text-anchor="middle" font-size="13" fill="#190F33">The database rejects one side rather than silently losing an update &#8212; the app retries the aborted transaction.</text>
+</svg>

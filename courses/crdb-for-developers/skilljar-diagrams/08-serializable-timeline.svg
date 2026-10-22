@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" font-family="sans-serif">
+  <rect x="0" y="0" width="900" height="360" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#190F33">Serializable: As If Run One After Another</text>
+
+  <text x="60" y="70" font-size="13" font-weight="bold" fill="#190F33">What actually happens (concurrent, overlapping in time)</text>
+  <line x1="60" y1="130" x2="840" y2="130" stroke="#D9D6E8" stroke-width="2"/>
+  <rect x="100" y="95" width="320" height="38" rx="8" fill="#F4F2FF" stroke="#3498db" stroke-width="2"/>
+  <text x="260" y="119" text-anchor="middle" font-size="13" font-weight="bold" fill="#3498db">Transaction 1</text>
+  <rect x="320" y="140" width="320" height="38" rx="8" fill="#F4F2FF" stroke="#e67e22" stroke-width="2"/>
+  <text x="480" y="164" text-anchor="middle" font-size="13" font-weight="bold" fill="#e67e22">Transaction 2</text>
+  <text x="450" y="200" text-anchor="middle" font-size="12" fill="#190F33">(they overlap on the wall clock)</text>
+
+  <text x="450" y="225" text-anchor="middle" font-size="20" font-weight="bold" fill="#6933FF">&#8595;&#8595;&#8595; serializable guarantee &#8595;&#8595;&#8595;</text>
+
+  <text x="60" y="255" font-size="13" font-weight="bold" fill="#190F33">What it's equivalent to (some serial order, back to back)</text>
+  <rect x="100" y="275" width="320" height="38" rx="8" fill="#F4F2FF" stroke="#3498db" stroke-width="2"/>
+  <text x="260" y="299" text-anchor="middle" font-size="13" font-weight="bold" fill="#3498db">Transaction 1</text>
+  <rect x="440" y="275" width="320" height="38" rx="8" fill="#F4F2FF" stroke="#e67e22" stroke-width="2"/>
+  <text x="600" y="299" text-anchor="middle" font-size="13" font-weight="bold" fill="#e67e22">Transaction 2</text>
+  <line x1="60" y1="330" x2="840" y2="330" stroke="#D9D6E8" stroke-width="2"/>
+</svg>

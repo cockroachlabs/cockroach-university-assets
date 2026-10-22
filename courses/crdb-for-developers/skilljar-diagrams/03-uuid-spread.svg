@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="sans-serif">
+  <text x="450" y="34" font-size="18" font-weight="bold" fill="#190F33" text-anchor="middle">UUID Keys Spread the Load</text>
+  <text x="450" y="56" font-size="13" fill="#190F33" text-anchor="middle">Random keys land all over the key space, not at one end</text>
+
+  <!-- incoming rows -->
+  <g font-size="12" fill="#190F33">
+    <rect x="50" y="90" width="110" height="36" rx="6" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+    <text x="105" y="113" text-anchor="middle">id = 8f2a...</text>
+    <rect x="175" y="90" width="110" height="36" rx="6" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+    <text x="230" y="113" text-anchor="middle">id = 1c9e...</text>
+    <rect x="300" y="90" width="110" height="36" rx="6" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+    <text x="355" y="113" text-anchor="middle">id = e471...</text>
+    <rect x="425" y="90" width="110" height="36" rx="6" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+    <text x="480" y="113" text-anchor="middle">id = 5b08...</text>
+  </g>
+
+  <!-- arrows fanning out -->
+  <line x1="105" y1="126" x2="190" y2="190" stroke="#27ae60" stroke-width="2"/>
+  <line x1="230" y1="126" x2="410" y2="190" stroke="#27ae60" stroke-width="2"/>
+  <line x1="355" y1="126" x2="630" y2="190" stroke="#27ae60" stroke-width="2"/>
+  <line x1="480" y1="126" x2="300" y2="190" stroke="#27ae60" stroke-width="2"/>
+
+  <!-- three healthy nodes -->
+  <rect x="140" y="200" width="110" height="90" rx="8" fill="#e8f8ee" stroke="#27ae60" stroke-width="3"/>
+  <text x="195" y="228" font-size="13" font-weight="bold" fill="#27ae60" text-anchor="middle">Node 1</text>
+  <text x="195" y="248" font-size="12" fill="#27ae60" text-anchor="middle">Range</text>
+  <text x="195" y="264" font-size="12" fill="#27ae60" text-anchor="middle">[1c..5b]</text>
+  <text x="195" y="282" font-size="12" fill="#27ae60" text-anchor="middle">steady writes</text>
+
+  <rect x="365" y="200" width="110" height="90" rx="8" fill="#e8f8ee" stroke="#27ae60" stroke-width="3"/>
+  <text x="420" y="228" font-size="13" font-weight="bold" fill="#27ae60" text-anchor="middle">Node 2</text>
+  <text x="420" y="248" font-size="12" fill="#27ae60" text-anchor="middle">Range</text>
+  <text x="420" y="264" font-size="12" fill="#27ae60" text-anchor="middle">[5b..8f]</text>
+  <text x="420" y="282" font-size="12" fill="#27ae60" text-anchor="middle">steady writes</text>
+
+  <rect x="590" y="200" width="110" height="90" rx="8" fill="#e8f8ee" stroke="#27ae60" stroke-width="3"/>
+  <text x="645" y="228" font-size="13" font-weight="bold" fill="#27ae60" text-anchor="middle">Node 3</text>
+  <text x="645" y="248" font-size="12" fill="#27ae60" text-anchor="middle">Range</text>
+  <text x="645" y="264" font-size="12" fill="#27ae60" text-anchor="middle">[8f..e4]</text>
+  <text x="645" y="282" font-size="12" fill="#27ae60" text-anchor="middle">steady writes</text>
+
+  <text x="450" y="330" font-size="14" font-weight="bold" fill="#27ae60" text-anchor="middle">Writes spread evenly across the cluster</text>
+  <text x="450" y="350" font-size="12" fill="#190F33" text-anchor="middle">every node shares the load</text>
+</svg>
