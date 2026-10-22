@@ -5,8 +5,7 @@ set -euxo pipefail
 # Usage: java.sh [connect|resilient]
 # Installs Temurin JDK 25 (the published core jar is Java 25 bytecode, so an
 # older JDK can neither compile nor run against it) + Maven, then lays down a
-# Maven project wired to the CockroachDB Java library on GitHub Packages.
-# Requires GH_USER / GH_PAT (Instruqt secrets) while the library is pre-release.
+# Maven project wired to the public CockroachDB Java library Pages Maven repo.
 
 LAB=${1:-connect}
 JDK_VER=${JDK_VER:-25}
@@ -34,23 +33,7 @@ grep -q 'JAVA_HOME=/opt/jdk' ~/.bashrc || echo "export JAVA_HOME=/opt/jdk-${JDK_
 export MAVEN_OPTS="${MAVEN_OPTS:-} --sun-misc-unsafe-memory-access=allow"
 grep -q 'MAVEN_OPTS' ~/.bashrc || echo 'export MAVEN_OPTS="--sun-misc-unsafe-memory-access=allow"' >> ~/.bashrc
 
-# --- Strategy B: Maven via GitHub Packages ----------------------------------
-# PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
-mkdir -p ~/.m2
-set +x   # do not echo the token into the setup log
-cat > ~/.m2/settings.xml <<EOF
-<settings>
-  <servers>
-    <server>
-      <id>github</id>
-      <username>${GH_USER}</username>
-      <password>${GH_PAT}</password>
-    </server>
-  </servers>
-</settings>
-EOF
-set -x
-
+# --- CockroachDB Java library: public Pages Maven repo (anonymous, no token) --
 mkdir -p /root/app/src/main/java && cd /root/app
 cat > /root/app/pom.xml <<'XML'
 <project xmlns="http://maven.apache.org/POM/4.0.0">
@@ -61,15 +44,15 @@ cat > /root/app/pom.xml <<'XML'
   <properties><maven.compiler.release>25</maven.compiler.release></properties>
   <repositories>
     <repository>
-      <id>github</id>
-      <url>https://maven.pkg.github.com/felipeg48/cockroachdb-java-library</url>
+      <id>cockroachlabs</id>
+      <url>https://cockroachlabs.github.io/cockroachdb-java-library/maven/</url>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-java-library-core</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.1</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>

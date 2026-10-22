@@ -4,9 +4,8 @@ set -euxo pipefail
 # Per-language setup for "CockroachDB for Spring Boot Developers" labs.
 # Usage: springboot.sh [connect|resilient]
 # Installs Temurin JDK 21 (the starter targets Java 21 and Spring Boot 4.1) +
-# Maven, then lays down a Spring Boot project wired to the CockroachDB Spring
-# Boot starter on GitHub Packages.
-# Requires GH_USER / GH_PAT (Instruqt secrets) while the starter is pre-release.
+# Maven, then lays down a Spring Boot project wired to the public CockroachDB
+# Spring Boot starter Pages Maven repo.
 
 LAB=${1:-connect}
 JDK_VER=${JDK_VER:-21}
@@ -25,23 +24,7 @@ fi
 export JAVA_HOME="/opt/jdk-${JDK_VER}"
 grep -q 'JAVA_HOME=/opt/jdk' ~/.bashrc || echo "export JAVA_HOME=/opt/jdk-${JDK_VER}" >> ~/.bashrc
 
-# --- Strategy B: Maven (GitHub Packages) credentials ------------------------
-# PUBLIC-SWAP: after GA, drop this server block and the GitHub Packages repo in pom.xml.
-mkdir -p ~/.m2
-set +x   # do not echo the token into the setup log
-cat > ~/.m2/settings.xml <<EOF
-<settings>
-  <servers>
-    <server>
-      <id>github</id>
-      <username>${GH_USER}</username>
-      <password>${GH_PAT}</password>
-    </server>
-  </servers>
-</settings>
-EOF
-set -x
-
+# --- CockroachDB Spring Boot starter: public Pages Maven repo (no token) -----
 mkdir -p /root/app/src/main/java/demo /root/app/src/main/resources && cd /root/app
 # Spring Boot parent MUST match the version the starter was built against (4.1.1),
 # otherwise the starter's auto-configuration resolves against the wrong Spring APIs.
@@ -60,8 +43,8 @@ cat > /root/app/pom.xml <<'XML'
   <properties><java.version>21</java.version></properties>
   <repositories>
     <repository>
-      <id>github</id>
-      <url>https://maven.pkg.github.com/felipeg48/cockroachdb-spring-boot-starter</url>
+      <id>cockroachlabs</id>
+      <url>https://cockroachlabs.github.io/cockroachdb-spring-boot-starter/maven/</url>
     </repository>
   </repositories>
   <dependencies>
@@ -76,7 +59,7 @@ cat > /root/app/pom.xml <<'XML'
     <dependency>
       <groupId>com.cockroachlabs</groupId>
       <artifactId>cockroachdb-spring-boot-starter</artifactId>
-      <version>0.1.1</version>
+      <version>0.1.2</version>
     </dependency>
   </dependencies>
   <build><plugins><plugin>

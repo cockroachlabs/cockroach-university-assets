@@ -3,8 +3,7 @@ set -euxo pipefail
 
 # Per-language setup for the "CockroachDB for Python Developers" labs.
 # Usage: python.sh [connect|resilient]
-# Requires GH_USER / GH_PAT in the environment (Instruqt secrets) while the
-# library is pre-release.
+# Pulls the CockroachDB Python library from its public Pages package index.
 
 LAB=${1:-connect}
 
@@ -25,15 +24,11 @@ SH
 chmod +x /usr/local/bin/python3
 cp /usr/local/bin/python3 /usr/local/bin/python
 
-# --- CockroachDB Python Library (pre-release, strategy B) --------------------
-# PUBLIC-SWAP: after GA, replace the two git installs with:
-#   /opt/crdbvenv/bin/pip install cockroachdb cockroachdb-core
+# --- CockroachDB Python library: public Pages package index (no token) -------
 /opt/crdbvenv/bin/pip install --quiet "psycopg[binary]"
-set +x   # do not echo the token into the setup log
 /opt/crdbvenv/bin/pip install --quiet \
-  "git+https://${GH_USER}:${GH_PAT}@github.com/felipeg48/cockroachdb-python-library.git#subdirectory=packages/cockroachdb" \
-  "git+https://${GH_USER}:${GH_PAT}@github.com/felipeg48/cockroachdb-python-library.git#subdirectory=packages/cockroachdb-core"
-set -x
+  --extra-index-url https://cockroachlabs.github.io/cockroachdb-python-library/simple/ \
+  cockroachdb cockroachdb-core
 
 mkdir -p /root/app
 

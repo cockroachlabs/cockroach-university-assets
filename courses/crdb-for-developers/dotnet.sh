@@ -4,8 +4,7 @@ set -euxo pipefail
 # Per-language setup for "CockroachDB for .NET Developers" labs.
 # Usage: dotnet.sh [connect|resilient]
 # Installs the .NET 10 SDK (the library packages target net10.0), then lays down
-# a console project wired to the CockroachDB .NET library on GitHub Packages.
-# Requires GH_USER / GH_PAT (Instruqt secrets) while the library is pre-release.
+# a console project wired to the public CockroachDB .NET library Pages NuGet feed.
 
 LAB=${1:-connect}
 DOTNET_CHANNEL=${DOTNET_CHANNEL:-10.0}
@@ -23,13 +22,10 @@ grep -q '/usr/share/dotnet' ~/.bashrc || echo 'export PATH=$PATH:/usr/share/dotn
 mkdir -p /root/app && cd /root/app
 [ -f app.csproj ] || dotnet new console --name app --output . --force
 
-# --- Strategy B: NuGet via GitHub Packages ----------------------------------
-# PUBLIC-SWAP: after GA, drop the github source and use the public nuget.org feed.
-set +x   # do not echo the token into the setup log
-dotnet nuget add source "https://nuget.pkg.github.com/felipeg48/index.json" \
-  -n github -u "${GH_USER}" -p "${GH_PAT}" --store-password-in-clear-text || true
-set -x
-dotnet add package CockroachDB.DotNet.Core --version 1.0.0 || true
+# --- CockroachDB .NET library: public Pages NuGet feed (anonymous, no token) --
+dotnet nuget add source "https://cockroachlabs.github.io/cockroachdb-dotnet-library/nuget/index.json" \
+  -n cockroachlabs || true
+dotnet add package CockroachDB.DotNet.Core --version 1.0.1 || true
 dotnet add package Npgsql || true
 # Concrete DI container + configuration (AddCockroachDB takes IConfiguration and
 # registers into an IServiceCollection; these provide the concrete types).

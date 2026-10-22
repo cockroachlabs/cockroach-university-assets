@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # Per-language setup for "CockroachDB for Go Developers" labs.
 # Usage: go.sh [connect|resilient]
-# Requires GH_USER / GH_PAT (Instruqt secrets) while the library is pre-release.
+# The CockroachDB Go library is a public module, fetched with plain go get.
 
 LAB=${1:-connect}
 GO_VER=${GO_VER:-1.26.3}
@@ -15,14 +15,6 @@ if ! command -v go &>/dev/null; then
 fi
 export PATH=$PATH:/usr/local/go/bin
 grep -q '/usr/local/go/bin' ~/.bashrc || echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-
-# --- Strategy B: private module fetch via git + PAT --------------------------
-# PUBLIC-SWAP: after GA, drop the git credential rewrite and GOPRIVATE.
-set +x   # do not echo the token into the setup log
-git config --global url."https://${GH_USER}:${GH_PAT}@github.com/".insteadOf "https://github.com/"
-set -x
-export GOPRIVATE="github.com/felipeg48/*"
-grep -q 'GOPRIVATE' ~/.bashrc || echo 'export GOPRIVATE=github.com/felipeg48/*' >> ~/.bashrc
 
 mkdir -p /root/app && cd /root/app
 [ -f go.mod ] || go mod init crdblab
@@ -37,8 +29,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo"
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo/pgxadapter"
+	"github.com/cockroachlabs/cockroachdb-go-library/crdbgo"
+	"github.com/cockroachlabs/cockroachdb-go-library/crdbgo/pgxadapter"
 )
 
 func main() {
@@ -83,8 +75,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo"
-	"github.com/felipeg48/cockroachdb-go-library/crdbgo/pgxadapter"
+	"github.com/cockroachlabs/cockroachdb-go-library/crdbgo"
+	"github.com/cockroachlabs/cockroachdb-go-library/crdbgo/pgxadapter"
 )
 
 func main() {
