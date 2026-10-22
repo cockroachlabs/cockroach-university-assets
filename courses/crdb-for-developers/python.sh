@@ -24,11 +24,15 @@ SH
 chmod +x /usr/local/bin/python3
 cp /usr/local/bin/python3 /usr/local/bin/python
 
-# --- CockroachDB Python library: public Pages package index (no token) -------
+# --- CockroachDB Python library: install from the public git repo ------------
+# NOT the Pages simple index: the package name `cockroachdb` collides with an
+# unrelated PyPI project (versions 0.1.0-0.3.5, incl. 0.1.1), so pip's
+# --extra-index-url resolves the wrong package. Installing straight from the
+# public repo bypasses index name-resolution and is deterministic. No token.
 /opt/crdbvenv/bin/pip install --quiet "psycopg[binary]"
 /opt/crdbvenv/bin/pip install --quiet \
-  --extra-index-url https://cockroachlabs.github.io/cockroachdb-python-library/simple/ \
-  cockroachdb cockroachdb-core
+  "git+https://github.com/cockroachlabs/cockroachdb-python-library.git#subdirectory=packages/cockroachdb" \
+  "git+https://github.com/cockroachlabs/cockroachdb-python-library.git#subdirectory=packages/cockroachdb-core"
 
 mkdir -p /root/app
 
