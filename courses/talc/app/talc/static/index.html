@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talc</title>
+<style>
+  :root { --brand:#6933ff; --ink:#0b1239; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f7fb; --card:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); height:100vh; display:flex; }
+  aside { width:280px; background:var(--card); border-right:1px solid var(--line); display:flex; flex-direction:column; }
+  aside header { padding:16px; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 10px; font-size:18px; } h1 span { color:var(--brand); }
+  select, input, button { font:inherit; }
+  select, input[type=text] { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  button { padding:7px 12px; border:0; border-radius:6px; background:var(--brand); color:#fff; cursor:pointer; }
+  button.secondary { background:#eef; color:var(--brand); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:6px; margin-top:8px; }
+  #conversations { list-style:none; margin:0; padding:8px; overflow:auto; flex:1; }
+  #conversations li { padding:8px 10px; border-radius:6px; cursor:pointer; }
+  #conversations li:hover { background:var(--bg); }
+  #conversations li.active { background:#ece7ff; }
+  #conversations small { display:block; color:var(--muted); font-size:12px; }
+  main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  #thread { flex:1; overflow:auto; padding:20px; }
+  .msg { max-width:720px; margin:0 auto 12px; padding:10px 14px; border-radius:10px; background:var(--card); border:1px solid var(--line); }
+  .msg.user { background:#ece7ff; border-color:#d9d0ff; }
+  .msg .who { font-size:12px; color:var(--muted); margin-bottom:2px; }
+  .tool { display:inline-block; margin:6px 6px 0 0; padding:1px 8px; border-radius:99px; background:#e6f4ea; color:#14532d; font-size:12px; }
+  #older { display:block; margin:0 auto 14px; }
+  form#composer { display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--line); background:var(--card); }
+  form#composer input { flex:1; }
+  #status { font-size:12px; color:var(--muted); padding:0 16px 10px; }
+  #error { color:#b91c1c; }
+  .empty { color:var(--muted); text-align:center; margin-top:20vh; }
+</style>
+</head>
+<body>
+<aside>
+  <header>
+    <h1><span>Talc</span></h1>
+    <label for="user">Signed in as</label>
+    <select id="user"></select>
+    <form id="newUser" class="row">
+      <input type="text" id="email" placeholder="email" required>
+      <button title="Create or update user">+</button>
+    </form>
+    <div class="row"><button id="newChat" style="width:100%">New conversation</button></div>
+  </header>
+  <ul id="conversations"></ul>
+  <div id="status"></div>
+</aside>
+<main>
+  <div id="thread"><p class="empty">Pick a user, then start a conversation.</p></div>
+  <form id="composer">
+    <input type="text" id="text" placeholder="Message Talc... (try: search the docs for changefeeds)" autocomplete="off" disabled>
+    <button id="send" disabled>Send</button>
+  </form>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { userId: null, convId: null, cursor: null };
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || res.statusText);
+  return body;
+}
+function status(msg, isError) { $("status").innerHTML = isError ? `<span id="error">${msg}</span>` : msg; }
+
+async function loadUsers(selectId) {
+  const users = await api("/api/users");
+  $("user").innerHTML = users.map(u => `<option value="${u.id}">${u.display_name} (${u.email})</option>`).join("");
+  if (selectId) $("user").value = selectId;
+  state.userId = $("user").value || null;
+  await loadConversations();
+}
+
+async function loadConversations() {
+  $("conversations").innerHTML = "";
+  if (!state.userId) return;
+  const convs = await api(`/api/users/${state.userId}/conversations`);
+  $("conversations").innerHTML = convs.map(c =>
+    `<li data-id="${c.id}" class="${c.id === state.convId ? "active" : ""}">${escapeHtml(c.title)}<small>${new Date(c.updated_at).toLocaleString()}</small></li>`).join("");
+}
+
+function renderMessage(m) {
+  const tools = (m.content.tool_calls || []).map(t => `<span class="tool">${t.name}</span>`).join("");
+  return `<div class="msg ${m.role}"><div class="who">${m.role}</div>${escapeHtml(m.content.text || "")}${tools ? "<div>" + tools + "</div>" : ""}</div>`;
+}
+
+async function openConversation(id) {
+  state.convId = id; state.cursor = null;
+  $("thread").innerHTML = "";
+  $("text").disabled = $("send").disabled = false;
+  await loadOlder();
+  $("thread").scrollTop = $("thread").scrollHeight;
+  await loadConversations();
+}
+
+async function loadOlder() {
+  const q = state.cursor ? `?cursor=${encodeURIComponent(state.cursor)}` : "";
+  const t0 = performance.now();
+  const page = await api(`/api/conversations/${state.convId}/messages${q}`);
+  status(`Loaded ${page.messages.length} messages in ${Math.round(performance.now() - t0)} ms`);
+  state.cursor = page.next_cursor;
+  $("older")?.remove();
+  $("thread").insertAdjacentHTML("afterbegin",
+    (state.cursor ? `<button id="older" class="secondary">Load older messages</button>` : "") +
+    page.messages.map(renderMessage).join(""));
+  $("older")?.addEventListener("click", loadOlder);
+}
+
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+
+$("user").addEventListener("change", async () => {
+  state.userId = $("user").value; state.convId = null;
+  $("thread").innerHTML = '<p class="empty">Pick or start a conversation.</p>';
+  await loadConversations();
+});
+$("newUser").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const email = $("email").value.trim();
+    const u = await api("/api/users", { method: "POST", body: JSON.stringify({ email, display_name: email.split("@")[0] }) });
+    $("email").value = "";
+    await loadUsers(u.id);
+    status(`User ${u.email} saved`);
+  } catch (err) { status(err.message, true); }
+});
+$("newChat").addEventListener("click", async () => {
+  if (!state.userId) return status("Create a user first", true);
+  try {
+    const c = await api("/api/conversations", { method: "POST", body: JSON.stringify({ user_id: state.userId }) });
+    await openConversation(c.id);
+  } catch (err) { status(err.message, true); }
+});
+$("conversations").addEventListener("click", (e) => {
+  const li = e.target.closest("li"); if (li) openConversation(li.dataset.id);
+});
+$("composer").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("text").value.trim(); if (!text) return;
+  $("text").value = "";
+  $("thread").querySelector(".empty")?.remove();
+  $("thread").insertAdjacentHTML("beforeend", renderMessage({ role: "user", content: { text } }));
+  try {
+    const reply = await api(`/api/conversations/${state.convId}/messages`, { method: "POST", body: JSON.stringify({ text }) });
+    $("thread").insertAdjacentHTML("beforeend", renderMessage(reply));
+    status("Saved");
+  } catch (err) { status(err.message, true); }
+  $("thread").scrollTop = $("thread").scrollHeight;
+  await loadConversations();
+});
+
+loadUsers().catch(err => status(err.message, true));
+</script>
+</body>
+</html>
